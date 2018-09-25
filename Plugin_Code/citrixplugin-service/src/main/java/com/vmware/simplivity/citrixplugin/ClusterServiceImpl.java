@@ -93,7 +93,7 @@ public class ClusterServiceImpl implements ClusterService
     	tempScriptPath = fileUtil.getTempLocation() + "tempClusterscript.ps1";
     	
     	fileUtil.copyFileUsingFileChannels(clusterScript, tempScriptPath);
-    	String vcenterName = "moscowVC.cloud.local";
+    	String vcenterName = "localhost";
     	
     	try
     	{
