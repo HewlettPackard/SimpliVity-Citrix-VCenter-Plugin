@@ -13,7 +13,7 @@ $baseUri  = "https://registry.citrixworkspacesapi.net"
 $hostname = $(hostname)
 #Install-Module -name VMWare.PowerCLI -Scope "CurrentUser" -Confirm:$false
 Get-Module -Name VMware* -ListAvailable | Import-Module 
-Connect-VIServer -Server moscowVC.cloud.local
+Connect-VIServer -Server localhost
 filter WriteFile {
 	#"$(Get-Date -Format G)|$hostname|$_" | Out-File -FilePath $logFile -Append
 	"$(Get-Date -Format s)|$hostname|$_" | Out-File -FilePath $logFile -Append -Encoding ASCII 
