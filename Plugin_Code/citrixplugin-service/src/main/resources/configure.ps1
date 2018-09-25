@@ -10,7 +10,7 @@ param(
 $hostname = $(hostname)
 $vmIP = $null
    Get-Module -Name VMware* -ListAvailable | Import-Module 
-   Connect-viserver -server moscowvc.cloud.local
+   Connect-viserver -server localhost
 
 Write-Host "Debug: Input file : $inputfile"
 filter WriteFile {
