@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="CitrixPluginModule.mxml" projectUUID="bd263a58-4d74-4c2e-b0c2-936da3c6de12" version="11">
+  <compiler additionalCompilerArguments="-load-config+=${VSPHERE_CLIENT_SDK}/resources/flex-config.xml -locale  -source-path+=locale/{locale} -resource-bundle-list=../bundles.properties" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="false" htmlExpressInstall="false" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="false" includeNetmonSwc="false" outputFolderPath="war/target/citrixplugin-ui-war" removeUnusedRSL="true" sourceFolderPath="swf/src/main/flex" strict="true" targetPlayerVersion="11.5.0" useApolloConfig="false" useDebugRSLSwfs="true" useFlashSDK="false" verifyDigests="true" warn="true">
+    <compilerSourcePath>
+      <compilerSourcePathEntry kind="1" linkType="1" path="war/src/main/webapp"/>
+    </compilerSourcePath>
+    <libraryPath defaultLinkType="1">
+      <libraryPathEntry kind="4" path=""/>
+      <libraryPathEntry kind="3" linkType="2" path="${VSPHERE_CLIENT_SDK}/libs/vsphere-client-lib.swc" useDefaultLinkType="false"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/Common"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LIB_LOCATION}/version4libs/FlexProject_Extended"/>
+      <libraryPathEntry kind="1" linkType="1" path="${FLEXUNIT_LOCALE_LOCATION}"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="CitrixPluginModule.mxml"/>
+  </applications>
+  <modules/>
+  <workers/>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+</actionScriptProperties>

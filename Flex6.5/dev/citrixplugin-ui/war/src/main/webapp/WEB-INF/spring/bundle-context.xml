@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:flex="http://www.springframework.org/schema/flex"
+   xmlns:osgi="http://www.springframework.org/schema/osgi"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans.xsd
+      http://www.springframework.org/schema/flex
+      http://www.springframework.org/schema/flex/spring-flex.xsd
+      http://www.springframework.org/schema/osgi
+      http://www.springframework.org/schema/osgi/spring-osgi.xsd">
+
+   <flex:message-broker id="citrixplugin-ui-broker" services-config-path="/WEB-INF/flex/services-config.xml">
+      <flex:exception-translator ref="ExceptionTranslatorService"/>
+   </flex:message-broker>
+
+   <!-- See ExceptionTranslatorService in citrixplugin-service project -->
+   <osgi:reference id="ExceptionTranslatorService"
+      interface="org.springframework.flex.core.ExceptionTranslator"/>
+      
+      <osgi:reference id="ConfigurationService" interface="com.vmware.simplivity.citrixplugin.ConfigurationService"/>
+   <flex:remoting-destination ref="ConfigurationService" message-broker="citrixplugin-ui-broker"/>
+   
+    <osgi:reference id="ClusterService" interface="com.vmware.simplivity.citrixplugin.ClusterService"/>
+   <flex:remoting-destination ref="ClusterService" message-broker="citrixplugin-ui-broker"/>
+   
+   <osgi:reference id="DeconfigureTableService" interface="com.vmware.simplivity.citrixplugin.DeconfigureTableService"/>
+   <flex:remoting-destination ref="DeconfigureTableService" message-broker="citrixplugin-ui-broker"/>
+   
+   <osgi:reference id="DeconfigurationService" interface="com.vmware.simplivity.citrixplugin.DeconfigurationService"/>
+   <flex:remoting-destination ref="DeconfigurationService" message-broker="citrixplugin-ui-broker"/>
+   
+    <osgi:reference id="ProxyService" interface="com.vmware.simplivity.citrixplugin.ProxyService"/>
+   <flex:remoting-destination ref="ProxyService" message-broker="citrixplugin-ui-broker"/>
+   
+     <osgi:reference id="ReadCfgFileService" interface="com.vmware.simplivity.citrixplugin.ReadCfgFileService"/>
+   <flex:remoting-destination ref="ReadCfgFileService" message-broker="citrixplugin-ui-broker"/>
+</beans>
+
