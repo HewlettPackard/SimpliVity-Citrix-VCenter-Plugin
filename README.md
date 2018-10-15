@@ -1,6 +1,6 @@
 # Automation for Citrix Cloud on HPE SimpliVity (vSphere)
 HPE Simplivity Citrix Plugin is used to configure or de-configure the cloud connectors in the Citrix Cloud.
-This Plugin is supported by VMWare vSphere 6.5 flux.
+This Plugin is supported by VMWare vSphere 6.5 flex.
 
 ## Release Notes:
 
