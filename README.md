@@ -1,4 +1,4 @@
-# Automation for Citrix Cloud on HPE SimpliVity (vSphere)
+# Automation for HPE SimpliVity and Citrix Cloud (vSphere)
 HPE Simplivity Citrix Plugin is used to configure or de-configure the cloud connectors in the Citrix Cloud.
 This Plugin is supported by VMWare vSphere 6.5 flex.
 
@@ -9,6 +9,7 @@ This is the first version of HPE SimpliVity plugin for Citrix cloud which instal
 -	Proxy implementation is a preview feature (beta) in version 1.0
 -	Secure SSL/HTTPS enabled on SimpliVity OmniCube controller (OVC) IP address to connect using REST APIs.
 -	DHCP Server is required for assignment of IP’s to Cloud Connector VMs.
+-	VM template is tested on Windows 2016 Operating System.
  
 ## Citrix Cloud Connector:
  
