@@ -3,7 +3,6 @@ package com.vmware.simplivity.citrixplugin;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 
@@ -60,16 +59,12 @@ public class PowershellExecutionUtil
 		try
 		{
 			int numberOfThreads = baseInputData.getInputFileList().size();
-			System.out.println("numberOfThreads:"+numberOfThreads);
 			PowershellExecutor[] arrayOfThreads = new PowershellExecutor[numberOfThreads];
-			System.out.println("arrayOfThreadds: "+arrayOfThreads);
 			
 			for(int index=0; index < numberOfThreads; index++)
 			{
 				arrayOfThreads[index] = new PowershellExecutor(baseInputData, index, scriptPath);
 				arrayOfThreads[index].start();
-				//arrayOfThreads[index].join();
-				//System.out.println("Join over"+index);
 			}
 			
 			for(int index=0; index < numberOfThreads; index++)
@@ -154,7 +149,6 @@ public class PowershellExecutionUtil
 		
 		PowershellExecutor(BaseInputData inputData, int index, String scriptPath)
 		{
-			System.out.println("Entered PowershellExecutor Constructor:"+index+" "+scriptPath);
 			this.baseInputData = inputData;
 			this.index = index;
 			this.scriptPath = scriptPath;
@@ -172,7 +166,6 @@ public class PowershellExecutionUtil
 				try
 				{
 					msg = baseInputData.getVmData().get(index).getVmName()+" ==> Thread started...\n";
-					System.out.println("logUtil: "+PowershellExecutionUtil.logUtil);
 					
 					PowershellExecutionUtil.logUtil.log(LEVEL.DEBUG, msg, PowershellExecutor.class, PowershellExecutionUtil.logUtil.getLineNumber());
 					
@@ -196,6 +189,7 @@ public class PowershellExecutionUtil
 
 	                while ((line = stdout.readLine()) != null) {
 	                	System.out.println(line);
+	                	PowershellExecutionUtil.logUtil.log(LEVEL.DEBUG, line, PowershellExecutor.class, PowershellExecutionUtil.logUtil.getLineNumber());
 	                }
 	                stdout.close();
 
@@ -227,7 +221,7 @@ public class PowershellExecutionUtil
 	                    java.io.File file = new java.io.File(inputFileName);
 	                    if ( file.isFile() )
 	                    {
-	                    	file.delete(); 
+	                    	//file.delete(); 
 	                    }
 	                }
 	                catch(Exception ex) 

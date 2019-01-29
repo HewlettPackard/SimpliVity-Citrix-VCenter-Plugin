@@ -49,4 +49,9 @@
          	<property name="fileUtil" ref="BasicCfgFileUtil"/>
          	<property name="logUtil" ref="LogUtil"/>
          </bean>
+                  
+         <bean name="OVCServiceImpl" class="com.vmware.simplivity.citrixplugin.OVCServiceImpl">
+         	<property name="fileUtil" ref="BasicCfgFileUtil"/>
+         	<property name="logUtil" ref="LogUtil"/>
+         </bean>
 </beans>

@@ -5,7 +5,6 @@ import com.vmware.simplivity.citrixplugin.BaseInputData;
 import com.vmware.simplivity.citrixplugin.DeconfigurationServiceProxy;
 import com.vmware.simplivity.citrixplugin.DeconfigureTableServiceProxy;
 import com.vmware.simplivity.citrixplugin.DomainData;
-import com.vmware.simplivity.citrixplugin.OVCData;
 import com.vmware.simplivity.citrixplugin.VMData;
 import com.vmware.ui.events.NavigationRequest;
 
@@ -96,14 +95,7 @@ public class DeconfigureViewMediator extends EventDispatcher {
 	   domainData.dmnPassword = _view.dmnPassword.text;
 	   domainData.dmnUserName = _view.dmnUserName.text;
 	   _view.input.domainData = domainData;
-	   
-	   //Preparing OVC data
-	   var ovcData:OVCData = new OVCData();
-	   ovcData.ovcIP = _view.ovcIP.text;
-	   ovcData.ovcUsername = _view.ovcUsername.text;
-	   ovcData.ovcPassword = _view.ovcPassword.text;
-	   _view.input.ovcData = ovcData;
-	  
+	     
 	   //Preparing VM Data
 	   var size:int = _view.ac.length;//Assumption
 	   var vmData:ArrayList = new ArrayList();
@@ -121,7 +113,7 @@ public class DeconfigureViewMediator extends EventDispatcher {
 	   
 	   var rowNumber:int = _view.rowNumber;
 	   // Async call to update settings on the back-end,
-	   _view.deconfigureStatus.text = "Deconfiguration is in progess. it may take few minutes";
+	   _view.deconfigureStatus.text = "Deconfiguration is in progess. Please check the latest log file from C:\\ProgramData\\VMware\\vCenterServer\\logs\\vsphere-client\\logs location";
 	   proxy.deconfigure(_view.input,rowNumber, onDeconfiguresResult);
 	   _view.submitButton.enabled = false;
 	   //tableProxy.getDeconfigureEntries(onGettingVMEntries);
@@ -132,6 +124,7 @@ public class DeconfigureViewMediator extends EventDispatcher {
     * Callback from the ConfigurationService configure method.
     */
    private function onDeconfiguresResult(event:MethodReturnEvent):void {
+	Alert.show("Entered into onDeconfigure ");
       if (event.error != null) {
          // Default error message
          var errorMsg:String = event.error.message;
@@ -154,14 +147,18 @@ public class DeconfigureViewMediator extends EventDispatcher {
       }
       // Update the status label to confirm action to the user.
 	  var returnVal:String = event.result as String;
+	  Alert.show("Entered into onDeconfigure "+returnVal);
 	  
 	  _view.submitButton.enabled = true;
 	  _view.ac = null;
-	  if(returnVal.match("success"))
+	  
+	  _view.deconfigureStatus.text = returnVal;
+	  tableProxy.getDeconfigureEntries(onGettingVMEntries);
+	  /*if(returnVal.match("success"))
 	  {
 		  _view.deconfigureStatus.text = "Deconfiguration done successfully.";
 		  tableProxy.getDeconfigureEntries(onGettingVMEntries);
-	  }
+	  }*/
    }
 }
 }

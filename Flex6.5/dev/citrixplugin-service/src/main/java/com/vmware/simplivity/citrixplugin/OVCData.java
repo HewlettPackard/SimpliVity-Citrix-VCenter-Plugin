@@ -44,8 +44,8 @@ public class OVCData
 	@Override
 	public String toString() {
 		return "OVCData = {OVCIP:"+ovcIP+", "+
-						"OVCUserName:"+ovcUsername+", "+
-						"OVCPassword:"+ovcPassword+"}";
+						"OVCUserName:"+ovcUsername+"}";
+						//+"OVCPassword:"+ovcPassword+"}";
 	}
 	
 	public boolean isEmpty()

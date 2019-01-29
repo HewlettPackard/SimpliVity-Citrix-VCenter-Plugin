@@ -5,13 +5,10 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.lang.SystemUtils;
 
 
 public class BasicCfgFileUtil 
@@ -23,6 +20,8 @@ public class BasicCfgFileUtil
     private String msg = null;
        
     private ProxyData proxyData; 
+
+    private OVCData ovcData;
     
     // File content Holder, appends as KEY=VALUE pair
     private Map <String, String> cfgEntryMap 
@@ -97,6 +96,16 @@ public class BasicCfgFileUtil
 		this.proxyData = proxyData;
 	}
 
+	public void setOVCData(OVCData ovcData) 
+	{
+		this.ovcData = ovcData;
+	}
+
+	public OVCData getOVCData() 
+	{
+		return ovcData;
+	}
+	
 	public String getConfigScrPath() 
 	{ 
        return getCitrixPluginDataFolder("configure.ps1");

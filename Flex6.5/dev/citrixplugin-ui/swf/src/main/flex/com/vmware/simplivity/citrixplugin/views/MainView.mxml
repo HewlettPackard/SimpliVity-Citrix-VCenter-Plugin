@@ -10,9 +10,18 @@
       <![CDATA[
          import com.vmware.simplivity.citrixplugin.ProxyData;
          import com.vmware.simplivity.citrixplugin.Util;
-		  
-		  [Bindable]
-		  public var input:ProxyData;
+		 import mx.controls.Alert;
+		 
+		private function userInput(event:Event):void {
+			var pattern:RegExp = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+			if(!(pattern.test(ovcIP.text)))
+			{
+				Alert.show("Enter a valid IP address");
+				return;
+			}
+				
+        }
+		
       ]]>
    </mx:Script>
 <mx:VBox>
@@ -20,34 +29,67 @@
 	<mx:Label text="{Util.getString('mainview.header')}" styleName="mainText" color="#800080"/>
 </mx:VBox>
 	<mx:VBox >
-		<!-- Proxy box -->
-		<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
-			<mx:Label text="Proxy Information" styleName="mainText" />
-			<mx:HBox width="150%" textAlign="left">
-				<mx:Label text="Proxy IP" fontWeight="bold" width="150"/>
-				<mx:TextInput id="proxyIP" width="150" />
+		<mx:HBox>
+			
+			<!-- OVC box -->
+			<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Label text="OVC Information" styleName="mainText" />
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="OVC IP*" fontWeight="bold" width="200"/>
+					<mx:TextInput id="ovcIP" width="250" />
+				</mx:HBox>
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="Username*" fontWeight="bold" width="200"/>
+					<mx:TextInput id="ovcUsername" width="250" change="userInput(event)"/>
+				</mx:HBox>
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="Password*" fontWeight="bold" width="200"/>
+					<mx:TextInput id="ovcPassword" width="250"  displayAsPassword="true"/>
+				</mx:HBox>
+				<mx:HBox>
+				<mx:Button id="ovcButton" label="Submit OVC Details"
+					  horizontalCenter="0" verticalCenter="0"/>
+				<mx:Label id="ovcstatus" color="green"/>
 			</mx:HBox>
-			<mx:HBox width="150%" textAlign="left">
-				<mx:Label text="Proxy Port" fontWeight="bold" width="150"/>
-				<mx:TextInput id="proxyPort" width="150"/>
-			</mx:HBox>
-			<mx:HBox width="150%" textAlign="left">
-				<mx:Label text="UserName" fontWeight="bold" width="150"/>
-				<mx:TextInput id="proxyUsername" width="150" />
-			</mx:HBox>
-			<mx:HBox width="150%" textAlign="left">
-				<mx:Label text="Password" fontWeight="bold" width="150"/>
-				<mx:TextInput id="proxyPassword" width="150"  displayAsPassword="true" />
-			</mx:HBox>
-		</mx:VBox>
+			</mx:VBox>
+			<!-- Proxy box -->
+			<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Label text="Proxy Information" styleName="mainText" />
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="Proxy IP" fontWeight="bold" width="200"/>
+					<mx:TextInput id="proxyIP" width="150" />
+				</mx:HBox>
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="Proxy Port" fontWeight="bold" width="200"/>
+					<mx:TextInput id="proxyPort" width="200" change="userInput(event)"/>
+				</mx:HBox>
+				<mx:HBox width="2000%" textAlign="left">
+					<mx:Label text="UserName" fontWeight="bold" width="200"/>
+					<mx:TextInput id="proxyUsername" width="200" />
+				</mx:HBox>
+				<mx:HBox width="200%" textAlign="left">
+					<mx:Label text="Password" fontWeight="bold" width="200"/>
+					<mx:TextInput id="proxyPassword" width="200"  displayAsPassword="true" />
+				</mx:HBox>
+				<mx:HBox>
+					<mx:Button id="submitButton" label="Submit Proxy Details"
+						  horizontalCenter="0" verticalCenter="0" width ="200%"/>
+					<mx:Label id="proxyStatus" color="green"/>
+				</mx:HBox>
+			</mx:VBox>
+		</mx:HBox>
 	</mx:VBox>
-   <mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
-	   <mx:Button id="submitButton" label="{Util.getString('mainview.submit')}"
-				  horizontalCenter="0" verticalCenter="0"/>
-	   <mx:Label id="proxyStatus" color="green"/>
-      <mx:LinkButton id="linkButton" label="{Util.getString('mainview.configure.link')}"
+	<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+		
+		<mx:Label text="Note:Submit OVC Information to perform plugin/plugout operations" />
+		<mx:HBox>
+		
+		<mx:Button id = "configureButton" label="Plugin" horizontalCenter="0" verticalCenter="0"/>
+		<mx:Button id = "deconfigureButton" label="Plugout" horizontalCenter="0" verticalCenter="0"/>
+		</mx:HBox>
+     <!-- <mx:LinkButton id="linkButton" label="{Util.getString('mainview.deconfigure.link')}"
                      textAlign="left" paddingTop="10"/>
 	  <mx:LinkButton id="deconfigureButton" label="{Util.getString('mainview.deconfigure.link')}"
-					  textAlign="left" paddingTop="10"/>
+					  textAlign="left" paddingTop="10"/> -->
    </mx:VBox>
 </mx:Box>

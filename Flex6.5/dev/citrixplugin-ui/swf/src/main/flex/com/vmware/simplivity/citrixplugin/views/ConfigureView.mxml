@@ -8,12 +8,13 @@
 
    <mx:Script>
       <![CDATA[
-		  
 		  import com.vmware.simplivity.citrixplugin.ConfigureInputData;
 		  import com.vmware.simplivity.citrixplugin.Util;
 		  import com.vmware.simplivity.citrixplugin.VMData;
 		  
 		  import mx.controls.Alert;
+		  import mx.validators.RegExpValidator;
+		  
 		  
           [Bindable]
           public var input:ConfigureInputData;
@@ -26,8 +27,12 @@
 		  public var hosts: Array = [];
 		  public var hostsSelected:Array = [];
 		  
+		  <mx:RegExpValidator src="{subnet,ip,gateway,dnsserver}" property="text" 
+		  expressions="^\b(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b$" 
+		  invalid="Alert.show('Enter a valid IP address!')" />	 
+		 
           private function userInput(event:Event):void {
-			  submitButton.enabled = true;
+			  //submitButton.enabled = true;
 			  configureStatus.text = null;
 			  
           }
@@ -53,10 +58,60 @@
 
 		  //public
 		  public function addVM():void {
-			  //ac.addItem({first:VmName.text, last:UserName.text,email:Password.text});
-			  ac.addItem({VmName:vmName.text,UserName:vmUsername.text,Password:vmPassword.text, Host:vmHost.text});
+			 
+			if (staticip.selected == false && (vmName.text == null || vmName.text == "" || vmPassword.text == null || vmPassword.text == "" || 
+			vmHost.text == null || 
+			vmHost.text == ""))
+			{
+				Alert.show("All fields are mandatory");
+				return;
+			}
+			if (staticip.selected == true && (subnet.text == null || subnet.text == ""  ||
+				ip.text == null || ip.text == ""  || 
+				gateway.text == null || gateway.text == "" ||
+				dnsserver.text == null || dnsserver.text == "" ||
+				vmName.text == null ||vmName.text == "" ||
+				vmPassword.text == null || vmPassword.text == "" ||
+				vmHost.text == null || vmHost.text == ""))
+			{
+				Alert.show("All fields are mandatory");
+				return;
+			}
+			
+			if (staticip.selected == true)
+			{
+				var pattern:RegExp = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+				//Alert.show("Trace Result: "+(pattern.test(subnet.text)));
+				if(!(pattern.test(ip.text)))
+				{
+					Alert.show("Enter a valid static IP address");
+					return;
+				}
+				
+				if(!(pattern.test(subnet.text)))
+				{
+					Alert.show("Enter a valid subnet mask");
+					return;
+				}
+				
+				if(!(pattern.test(gateway.text)))
+				{
+					Alert.show("Enter a valid gateway");
+					return;
+				}
+				
+				if(!(pattern.test(dnsserver.text)))
+				{
+					Alert.show("Enter a valid DNS server address");
+					return;
+				}
+			}
+			
+			  ac.addItem({VmName:vmName.text,UserName:vmUsername.text,Password:vmPassword.text, Host:vmHost.text, 
+				IsStatic:staticip.selected, IpAddr:ip.text, Subnet:subnet.text, Gateway:gateway.text, DnsServer:dnsserver.text});
 			  hostsSelected.push(vmHost.text);
 			  clearInputs();
+			  submitButton.enabled = true;
 		  }
 		  public function dgChangeHandler():void {
 			  clearInputs();
@@ -65,21 +120,33 @@
 			  vmHost.selectedItem = dg.selectedItem.Host;
 			  removeVm.enabled = true;
 		  }
-		  
-		  /*public function updateVM():void {
-			  if (dg.selectedItem !== null) {
-				  ac.setItemAt({VmName:vmName.text, UserName:vmUsername.text,Password:vmPassword.text, Host:vmHost.text}, dg.selectedIndex);
-				 
+		
+		  public function onstatic(event:Event):void {
+		  	  if(staticip.selected == true) {
+					ip.enabled=true;
+					subnet.enabled = true;
+					gateway.enabled = true;
+					dnsserver.enabled = true;
 			  }
-			  clearInputs();
-		  }*/
+			  if(dhcp.selected == true){
+				ip.enabled=false;
+				subnet.enabled = false;
+				gateway.enabled = false;
+				dnsserver.enabled = false;
+			  }
+			 
+		  }
+
 
 		  public function clearInputs():void {
 			  vmName.text = "";
 			  vmUsername.text = "";
 			  vmPassword.text = "";
 			  vmHost.text = "";
-			  
+			  subnet.text = "";
+			  gateway.text = "";
+			  dnsserver.text = "";
+			  ip.text = "";
 		  }
 		  
 		  public function removeVM():void 
@@ -161,25 +228,14 @@
 					<mx:Label text="Simplivity Cluster*" fontWeight="bold" width="200"/>
 					<mx:ComboBox id="vmCluster" width="250" change="setHosts()"/>
 				</mx:HBox>
+				
+			</mx:VBox>
+			<!-- Template box -->
+			<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
+				<mx:Label text="" styleName="mainText" />
 				<mx:HBox width="200%" textAlign="left">
 					<mx:Label text="Image template*" fontWeight="bold" width="200"/>
 					<mx:TextInput id="template" width="250"/>
-				</mx:HBox>
-			</mx:VBox>
-			<!-- OVC box -->
-			<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
-				<mx:Label text="OVC Information" styleName="mainText" />
-				<mx:HBox width="200%" textAlign="left">
-					<mx:Label text="OVC IP" fontWeight="bold" width="200"/>
-					<mx:TextInput id="ovcIP" width="250"/>
-				</mx:HBox>
-				<mx:HBox width="200%" textAlign="left">
-					<mx:Label text="UserName" fontWeight="bold" width="200"/>
-					<mx:TextInput id="ovcUsername" width="250"/>
-				</mx:HBox>
-				<mx:HBox width="200%" textAlign="left">
-					<mx:Label text="Password" fontWeight="bold" width="200"/>
-					<mx:TextInput id="ovcPassword" width="250"  displayAsPassword="true"/>
 				</mx:HBox>
 			</mx:VBox>
 		</mx:HBox>
@@ -194,27 +250,55 @@
 	  <mx:DataGrid height="75" width="750" id="dg" dataProvider="{ac}" change="dgChangeHandler()" >
 		  <mx:columns>
 			  <mx:DataGridColumn dataField="VmName" headerText="VM Name" />
-			  <mx:DataGridColumn dataField="UserName" headerText="User Name" />
+			  <mx:DataGridColumn dataField="UserName" headerText="Username" />
 			  <!-- <mx:DataGridColumn dataField="Password" headerText="Password" /> -->
 			  <mx:DataGridColumn dataField="Host" headerText="Host" />
 		  </mx:columns>
 	  </mx:DataGrid>
-		  
-	  <mx:Form>
-		  <mx:FormItem label="VM Name*">
-			  <mx:TextInput id="vmName" width="250"/>
-		  </mx:FormItem>
-		  <mx:FormItem label="User Name*">
-			  <mx:TextInput id="vmUsername" width="250"/>
-		  </mx:FormItem>
-		  <mx:FormItem label="Password*">
-			  <mx:TextInput id="vmPassword" width="250" displayAsPassword="true" change="userInput(event)" />
-		  </mx:FormItem>
-		  <mx:FormItem label="Host*">
-			  <mx:ComboBox id="vmHost" width="200" change="checkHost(event)"/>
-						    
-		  </mx:FormItem>
-	  </mx:Form>
+		
+	<mx:HBox>
+		<mx:VBox>
+			<mx:Form>
+				<mx:FormItem label="VM Name*">
+					<mx:TextInput id="vmName" width="250"/>
+				</mx:FormItem>
+				<mx:FormItem label="Username*">
+					<mx:TextInput id="vmUsername" width="250"/>
+				</mx:FormItem>
+				<mx:FormItem label="Password*">
+					<mx:TextInput id="vmPassword" width="250" displayAsPassword="true" change="userInput(event)" />
+				</mx:FormItem>
+				<mx:FormItem label="Host*">
+					<mx:ComboBox id="vmHost" width="200" change="checkHost(event)"/>
+					
+				</mx:FormItem>
+			</mx:Form>
+		</mx:VBox>
+		<mx:VBox>
+			<mx:HBox>
+			<mx:RadioButtonGroup id="rdgrp" itemClick="onstatic(event);"/>
+				<mx:RadioButton groupName="rdgrp" id="dhcp" width="150" label="{Util.getString('mainview.configure.dhcp')}" value="true" />
+				<mx:RadioButton groupName="rdgrp" id="staticip" width="150" label="{Util.getString('mainview.configure.staticip')}" value="false" />
+			</mx:HBox>
+			<mx:HBox width="200%" textAlign="left">
+				<mx:Label text="IP Address*" fontWeight="bold" width="200"/>
+				<mx:TextInput id="ip" width="250" enabled="false"/>
+			</mx:HBox>
+			<mx:HBox width="200%" textAlign="left">
+				<mx:Label text="Subnet Mask*" fontWeight="bold" width="200"/>
+				<mx:TextInput id="subnet" width="250" enabled="false"/>
+			</mx:HBox>
+			<mx:HBox width="200%" textAlign="left">
+				<mx:Label text="Default Gateway*" fontWeight="bold" width="200"/>
+				<mx:TextInput id="gateway" width="250" enabled="false"/>
+			</mx:HBox>
+			<mx:HBox width="200%" textAlign="left">
+				<mx:Label text="DNS Server*" fontWeight="bold" width="200"/>
+				<mx:TextInput id="dnsserver" width="250" enabled="false"/>
+			</mx:HBox>
+		</mx:VBox>
+	</mx:HBox>
+	  
 		  
 		  <mx:HBox>
 			  <mx:Button id="addVm" label="Add VM" click="addVM()" />

@@ -46,6 +46,17 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 			logUtil.log(LEVEL.ERROR, msg, clazz, logUtil.getLineNumber());
 			return msg;
 		}
+		
+		OVCData ovcData = fileUtil.getOVCData();
+		
+		if(ovcData != null)
+		{
+			msg = "Setting OVC Data in Deconfiguration Service:"+ovcData;
+			System.out.println(msg);
+			logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
+			baseInputData.setOvcData(ovcData);
+		}
+		
 		if(!prepareInputFile(baseInputData))
 		{
 			msg = "Error in creating input file for Deconfigure";
@@ -85,13 +96,12 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 				msg = "Deconfiguration done. Check the log file for more information";
 				System.out.println(msg);
 				logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
-				msg = "success";
 				break;
 			}
 			case FAILURE:
 			case PARTIALSUCCESS:
 			{
-				msg = "Error occured while deconfiguring. Please check the logs for more information.";
+				msg = "Error occured while deconfiguring. Please check the logs"+logUtil.getLogFilePath()+" for more information.";
 				System.out.println(msg);
 				logUtil.log(LEVEL.ERROR, msg, clazz, logUtil.getLineNumber());
 			}
@@ -113,20 +123,29 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 	 */
 	private boolean prepareInputFile(BaseInputData baseInputData) 
 	{
+		msg = "Entered prepareInputFile method."+baseInputData;
+		System.out.println(msg);
+		logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
 		List<String> filenameList = new ArrayList<String>();
         for ( int ix = 0; ix < baseInputData.getVmData().size(); ix++ )
         {   
             String sFileLine = "@{\r\nvm = \r\n\t@{\r\n";
             sFileLine += "\tname = " + "\'" + baseInputData.getVmData().get(ix).getVmName()  + "\'\r\n" +
                         "\thost = " + "\'" + baseInputData.getVmData().get(ix).getVmHost() +"\'\r\n" +
-                        "\tusername =  " + "\'" + baseInputData.getVmData().get(ix).getVmUserName() +"\'\r\n" +
+                        "\tusername =  " + "\'" + baseInputData.getVmData().get(ix).getVmUsername() +"\'\r\n" +
                         "\tpassword = " + "\'" + baseInputData.getVmData().get(ix).getVmPassword() +"\'\r\n \t}\r\n";
-          
+            
+            sFileLine += "ovc = \r\n\t@{\r\n";
+            sFileLine += "\tovcip = " + "\'" + baseInputData.getOvcData().getOVCIP() +"\'\r\n" +
+                        "\tovcusername = " + "\'" + baseInputData.getOvcData().ovcUsername +"\'\r\n" +
+                        "\tovcpassword = " + "\'" + baseInputData.getOvcData().getOVCPassword() +"\'\r\n \t}\r\n";
+            
             sFileLine += "ad = \r\n\t@{\r\n";
             sFileLine += "\tdomain = " + "\'" + baseInputData.getDomainData().getDomainName() +"\'\r\n" +
                         "\tusername = " + "\'" + baseInputData.getDomainData().getDomainUserName() +"\'\r\n" +
                         "\tpassword = " + "\'" + baseInputData.getDomainData().getDomainPassword() +"\'\r\n \t}\r\n}\r";
 
+            System.out.println(sFileLine);
             String inputFilename = fileUtil.writeToFile(baseInputData.getVmData().get(ix).getVmName()+".psd1", sFileLine, "DeconfigPlugin");
             if(inputFilename == null)
             {

@@ -11,20 +11,25 @@ param(
 $TrustUri = "https://trust.citrixworkspacesapi.net"
 $baseUri  = "https://registry.citrixworkspacesapi.net"
 $hostname = $(hostname)
-#Install-Module -name VMWare.PowerCLI -Scope "CurrentUser" -Confirm:$false
-Get-Module -Name VMware* -ListAvailable | Import-Module 
-Connect-VIServer -Server localhost
+
+Write-Host "Debug: Input file : $inputFile"
+Write-Host "Debug: Log file : $logFile"
 filter WriteFile {
-	#"$(Get-Date -Format G)|$hostname|$_" | Out-File -FilePath $logFile -Append
-	"$(Get-Date -Format s)|$hostname|$_" | Out-File -FilePath $logFile -Append -Encoding ASCII 
+Try {
+	"$(Get-Date -Format s)|$hostname|$_" | Out-File -FilePath $logFile -Append -Encoding ASCII
+	}
+	Catch{
+	Write-Host "Error occured while writing to log file"
+	Write-Host "Error: $_.ExceptionItemName $_.Exception.Message"
+	}
 }
 
-#Set-ExecutionPolicy Unrestricted -Force
 ############### END USER VARIABLES ###############
 
-"APPLOG| Starting cleanup script of Citrix Cloud connector and SCVMM VM" | WriteFile
+"APPLOG| Starting cleanup script of Citrix Cloud connector" | WriteFile
+Write-host "APPLOG| Starting cleanup script of Citrix Cloud connector"
 
-########## BEGIN INPUT DATA VALIDATION ###########
+########## BEGIN INPUT DATA VALIDATION ##########
 if (-NOT (Test-Path $inputFile)) {
     "ERRLOG| Input Data file is not present in the given path $inputFile" | WriteFile
     Write-Error "Input Data file is not present in the given path $inputFile"
@@ -49,6 +54,11 @@ Try {
     $adUsername  = $input.ad.username
     $adPassword =  $input.ad.password
     #$pass_word = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($input.svt.password))
+    
+    #OVC Details
+    $ovcIP = $input.ovc.ovcip
+    $ovcUsername = $input.ovc.ovcusername
+    $ovcPassword = $input.ovc.ovcpassword
 
     # Read the logging file
     $execution_log = $input.logging.execution
@@ -59,12 +69,24 @@ Try {
     exit 1
 }
 
-
+	if (-Not ($vmName -And $adUsername -And $adPassword -And $ovcIP -And $ovcUsername -And $ovcPassword) ) {
+		"ERRLOG| Few or all the required parameters are missing" | WriteFile
+	    Write-Error "Few or all the required parameters are missing"
+	    exit 1
+	}
+	
+	Write-Host "Input parameters successfully read" 
+	"APPLOG| Input parameters successfully read" | WriteFile
+	set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+  	Get-Module -Name VMware* -ListAvailable | Import-Module 
+   	#Connect-viserver -server localhost -Username $ovcUsername -Password $ovcPassword
+   	Connect-viserver -server moscowvc.cloud.local -Username $ovcUsername -Password $ovcPassword
+   	
 function cleanUp{
 	param ($vm)
 	#***checking whether the VM is powered on*******************
 	$vm = Get-VM -Name $vmName
-	write-Host "inside cleanUp function 32: "$vm.PowerState
+	
 	if($vm.PowerState -ne 'PoweredOff')
 	{
 		"APPLOG| Powering off the VM '$vmName'" | WriteFile
@@ -130,13 +152,13 @@ $cmd = "Get-WmiObject -Class Win32_Product -Filter {Name like 'Citrix Cloud Serv
 $cwcInstallConfirm = Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
 Write-Host "cwcInstallConfirm: "$cwcInstallConfirm
 
-$tempFile = 'c:\TempFile.txt'
+$tempFile = 'C:\Users\Public\TempFile.txt'
 if( $cwcInstallConfirm.ScriptOutput -Match "Citrix Cloud Services Connectivity Test Tool")
 {
 	"APPLOG| Uninstalling the cwcconnector from $vmName" | WriteFile 
 	Write-Host "Uninstalling the cwcconnector from $vmName"
 	Write-Host "localCreds "$localCreds 
-	Start-Process "C:\PsExec.exe" " /accepteula -nobanner -s \\$vmIP  -u $vmUsername -p $vmPassword c:\ConnectorUninstall.cmd" -RedirectStandardError $logFile -NoNewWindow -Wait
+	Start-Process "C:\Users\Public\PsExec.exe" " /accepteula -nobanner -s \\$vmIP  -u $vmUsername -p $vmPassword c:\ConnectorUninstall.cmd" -RedirectStandardError $logFile -NoNewWindow -Wait
 	#$uninstallationResult = Invoke-VMScript -VM $vm -ScriptText $uninstallscript -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
 	Write-Host "Exit"$uninstallationResult
 }   
@@ -145,11 +167,6 @@ if( $cwcInstallConfirm.ScriptOutput -Match "Citrix Cloud Services Connectivity T
 
 "APPLOG| Unjoin $vmName from AD domain $domain" | WriteFile 
 Write-Host "Unjoin $vmName from AD domain $domain"
-
-
-
-Write-Host "AdUserName "$adUsername
-Write-Host "AdPwd "$adPassword
 
 $cmd = @"
 `$password = ConvertTo-SecureString '$adPassword' -AsPlainText -Force 

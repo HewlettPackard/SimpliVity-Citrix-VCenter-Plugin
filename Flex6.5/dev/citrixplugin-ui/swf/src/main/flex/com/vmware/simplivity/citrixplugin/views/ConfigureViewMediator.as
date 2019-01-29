@@ -6,7 +6,6 @@ import com.vmware.simplivity.citrixplugin.ClusterServiceProxy;
 import com.vmware.simplivity.citrixplugin.ConfigurationServiceProxy;
 import com.vmware.simplivity.citrixplugin.ConfigureInputData;
 import com.vmware.simplivity.citrixplugin.DomainData;
-import com.vmware.simplivity.citrixplugin.OVCData;
 import com.vmware.simplivity.citrixplugin.ReadCfgFileServiceProxy;
 import com.vmware.simplivity.citrixplugin.VMData;
 import com.vmware.ui.events.NavigationRequest;
@@ -19,6 +18,7 @@ import mx.collections.ArrayCollection;
 import mx.collections.ArrayList;
 import mx.controls.Alert;
 import mx.rpc.Fault;
+import mx.managers.CursorManager;
 
 [Event(name="{com.vmware.ui.events.NavigationRequest.NAVIGATION_REQUEST}",
       type="com.vmware.ui.events.NavigationRequest")]
@@ -40,6 +40,8 @@ public class ConfigureViewMediator extends EventDispatcher {
    [InjectableProxy]
    public var cfgProxy:ReadCfgFileServiceProxy;
 
+  // public var statusflag:Boolean = false;
+   
    [View]
    /** The view associated with this mediator. */
    public function set view(value:ConfigureView):void {
@@ -52,7 +54,10 @@ public class ConfigureViewMediator extends EventDispatcher {
 
       _view = value;
       if (_view != null) {
-		  
+		_view.dhcp.selected = true;
+		_view.subnet.enabled = false;
+		_view.gateway.enabled = false;
+		_view.dnsserver.enabled = false;
          initialize();
 		 clusterProxy.getClusterInfo(onClusterInfoResult);
       }
@@ -69,6 +74,7 @@ public class ConfigureViewMediator extends EventDispatcher {
       // The update button will be enabled only when a text input changes
       _view.submitButton.enabled = false;
 	  _view.removeVm.enabled = false;
+	  
 	  cfgProxy.readcfgfile(onCfgServiceResult);
 	  
 	  _view.input = new ConfigureInputData();
@@ -105,14 +111,7 @@ public class ConfigureViewMediator extends EventDispatcher {
 			   _view.customerName.text = cfgObj.citrixData.customerName;
 			   _view.resourceLocation.text = cfgObj.citrixData.resourceLocation;
 		   }
-		   
-		   if(cfgObj.ovcData != null)
-		   {
-			   _view.ovcIP.text = cfgObj.ovcData.ovcIP;
-			   _view.ovcUsername.text = cfgObj.ovcData.ovcUsername;
-			   _view.ovcPassword.text = cfgObj.ovcData.ovcPassword;
-		   }
-		   
+		  		   
 		   if(cfgObj.template != null)
 		   {
 			   _view.template.text = cfgObj.template;
@@ -120,7 +119,7 @@ public class ConfigureViewMediator extends EventDispatcher {
 	   }
 	   else
 	   {
-		   Alert.show("Check the configuration file and if empty fill teh details and refresh teh page");
+		   Alert.show("Check the configuration file and if empty fill the details and refresh the page");
 	   }
    }
 
@@ -135,9 +134,16 @@ public class ConfigureViewMediator extends EventDispatcher {
 	   _view.clusterMap = clusterMap;
 	   var clusterArray:Array = new Array();
 	   clusterArray.push("Select cluster");
+	   var flag:Boolean = false;
 	   for (var i:String in clusterMap)
 	   {
 		   clusterArray.push(i);
+		   flag = true;
+	   }
+	   if(flag == false)
+	   {
+			Alert.show("Error in getting cluster info. Please enter the OVC details in main page if not given before.")
+			return;
 	   }
 	   _view.vmCluster.dataProvider = clusterArray;
    }
@@ -145,9 +151,10 @@ public class ConfigureViewMediator extends EventDispatcher {
    
    private function onSubmitClick(click:MouseEvent):void {
 
-	   _view.configureStatus.text = "Configuration is in progress. It may take few minutes...";
+	   _view.configureStatus.text = "Configuration may take few minutes. Please check the latest log file from C:\\ProgramData\\VMware\\vCenterServer\\logs\\vsphere-client\\logs location";
 	   //Preparing template data
 	   _view.input.template = _view.template.text;
+	   
 	   
 	   // Preparing citrix data
 	   var cData:CitrixData = new CitrixData();
@@ -163,14 +170,7 @@ public class ConfigureViewMediator extends EventDispatcher {
 	   domainData.dmnPassword = _view.dmnPassword.text;
 	   domainData.dmnUserName = _view.dmnUserName.text;
 	   _view.input.domainData = domainData;
-	   
-	   //Preparing OVC data
-	   var ovcData:OVCData = new OVCData();
-	   ovcData.ovcIP = _view.ovcIP.text;
-	   ovcData.ovcUsername = _view.ovcUsername.text;
-	   ovcData.ovcPassword = _view.ovcPassword.text;
-	   _view.input.ovcData = ovcData;
-	  
+	     
 	   //Preparing VM Data
 	   var size:int = _view.ac.length;//Assumption
 	   var vmData:ArrayList = new ArrayList();
@@ -182,6 +182,15 @@ public class ConfigureViewMediator extends EventDispatcher {
 		   temp.vmPassword =  _view.ac.getItemAt(index).Password;
 		   temp.vmCluster = _view.vmCluster.text;
 		   temp.vmHost =  _view.ac.getItemAt(index).Host;
+		   var flag:Boolean = _view.ac.getItemAt(index).IsStatic;
+
+		   temp.isStatic = flag;
+		   if(flag) {
+				temp.subnet = _view.ac.getItemAt(index).Subnet;
+				temp.ipAddr = _view.ac.getItemAt(index).IpAddr;
+				temp.gateway = _view.ac.getItemAt(index).Gateway;
+				temp.dnsServerAddress = _view.ac.getItemAt(index).DnsServer;
+		   }
 		   
 		   vmData.addItem(temp);
 	   }
@@ -190,6 +199,29 @@ public class ConfigureViewMediator extends EventDispatcher {
 	   // Async call to update settings on the back-end,
 	   proxy.configure(_view.input, onConfigureResult);
 	   _view.submitButton.enabled = false;
+	   CursorManager.setBusyCursor();
+	   var mainConfiguration:String ="Configuration is in  progress .";
+	   var dotCharacter:String =".";
+	   
+		
+	/*   for (var i:int =0;statusflag == false;i++)
+	   {	
+			
+			if( (i%100000000) == 0) {
+				mainConfiguration = mainConfiguration + dotCharacter;
+				_view.configureStatus.text = mainConfiguration;
+			}
+			if( (i%200000000) == 0) {
+				mainConfiguration = mainConfiguration + dotCharacter;
+				_view.configureStatus.text = mainConfiguration;
+			}
+			if( (i%200000000) == 0) {
+				mainConfiguration = "Configuration is in  progress .";
+				_view.configureStatus.text = mainConfiguration;
+			}
+		
+	   }
+	 */
    }
 
    /**
@@ -199,6 +231,7 @@ public class ConfigureViewMediator extends EventDispatcher {
       if (event.error != null) {
          // Default error message
          var errorMsg:String = event.error.message;
+		// statusflag = true;
 
          // In case of an RPC Fault the faultCode is set to the initial Java exception
          // by our custom ExceptionTranslatorService, so we can handle specific errors
@@ -219,6 +252,7 @@ public class ConfigureViewMediator extends EventDispatcher {
       // Update the status label to confirm action to the user.
 	  _view.configureStatus.text = event.result as String;
 	  _view.submitButton.enabled = true;
+	  CursorManager.removeBusyCursor();
    }
 }
 }

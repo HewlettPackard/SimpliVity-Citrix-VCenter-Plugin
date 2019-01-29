@@ -9,8 +9,6 @@ param(
 ) 
 $hostname = $(hostname)
 $vmIP = $null
-   Get-Module -Name VMware* -ListAvailable | Import-Module 
-   Connect-viserver -server localhost
 
 Write-Host "Debug: Input file : $inputfile"
 filter WriteFile {
@@ -19,9 +17,68 @@ Try {
 	}
 	Catch{
 	Write-Host "Error occured while writing to log file"
+	Write-Host "Error: $_.ExceptionItemName $_.Exception.Message"
 	} 
 }
 
+
+
+#set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
+#********************************************************#
+#  MethodName : pingIp              		         #
+#  Input      : VM IP                                    #
+#  Description: At regular interval $vmIp will be pinged #
+#********************************************************#
+               
+function pingIp{
+
+	param ($vmIP)
+	$vm = Get-VM -Name $vmName
+	Start-Sleep -s $sleep_time
+	Write-Host "Paramater to pingIP:"$vmIP
+	Write-Host "Log File:"$logFile
+	
+	$cmd_disablefirewall ="Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False"
+	$count = 30
+
+	Write-Host "Checking whether the VM is up......"
+
+	While ($count) {
+		Start-Sleep -s 5
+		
+		try
+		{
+			if (Test-Connection -ComputerName  $vmIP -Count 1 -Quiet) {
+				"APPLOG| PingIp function : Able to ping the VM $vmName...." | WriteFile
+				Write-Host "PingIp function : Able to ping the VM $vmName...."
+				$count = 0
+				return $true
+				
+			}
+			Write-Host -NoNewLine "."
+			if ($count -eq 12 ){
+				Write-Host "Disabling the Firewall fr the VM $vmName"
+				"APPLOG| Disabling the Firewall fr the VM $vmName" | WriteFile
+				$firewallOutput = Invoke-VMScript -VM $vm -ScriptText $cmd_disablefirewall -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore -ErrorAction Ignore
+			}
+			$count = $count - 1
+			if ($count -eq 0) {
+				"ERRLOG| Unable to ping the VM $vmName " | WriteFile
+				Write-Error "Unable to ping the VM $vmName"
+				cleanUp $vm
+				#exit 1
+				return $false 
+			}
+		}
+		Catch
+		{
+			"ERRLOG| Test-Connection Failed $_.ExceptionItemName  $_.Exception.Message" | WriteFile
+			Write-Error " $_.ExceptionItemName $_.Exception.Message"
+		}
+	}
+}
+
+#set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
 #*******************************************************#
 #  MethodName : cleanUp              					#
 #  Input      : VM object            					#
@@ -52,8 +109,9 @@ function cleanUp{
 	exit 1
 }
 "APPLOG| Starting script to create VM and install Citrix Cloud connector" | WriteFile
+Write-Host "APPLOG| Starting script to create VM and install Citrix Cloud connector"
 
-Set-ExecutionPolicy Unrestricted -Force
+#Set-ExecutionPolicy Unrestricted -Force
 ############### END USER VARIABLES ###############
 
 ########## BEGIN INPUT DATA VALIDATION ###########
@@ -99,6 +157,16 @@ Try {
 	$proxyPort = $input.proxy.proxyport
 	$proxyUsername = $input.proxy.proxyuername
 	$proxyPassword = $input.proxy.proxypassword
+	
+	#StaticIPDetails
+	$isStatic = $input.vm.isstatic
+	if ($isStatic -eq "true")
+	{
+		$staticIP = $input.vm.ip
+    	$prefixLength = $input.vm.prefixlength
+    	$gateway = $input.vm.gateway
+    	$dnsserver = $input.vm.dnsserver
+	}
 
     # Read the logging file
     $execution_log = $input.logging.execution
@@ -113,7 +181,7 @@ Catch {
     }
 	
 	
-	if (-Not ($vmName -And $vmTemplate -And $adDomain -And $adUsername -And $adPassword -And $citrixCustomer -And $citrixClientId -And $citrixClientKey -And $citrixResourceLocation) ) {
+	if (-Not ($vmName -And $vmTemplate -And $adDomain -And $adUsername -And $adPassword -And $citrixCustomer -And $citrixClientId -And $citrixClientKey -And $citrixResourceLocation -And $ovcIP -And $ovcUsername -And $ovcPassword) ) {
 	"ERRLOG| Few or all the required parameters are missing" | WriteFile
     Write-Error "Few or all the required parameters are missing"
     exit 1
@@ -122,6 +190,10 @@ Catch {
 Write-Host "Input parameters successfully read" 
 "APPLOG| Input parameters successfully read" | WriteFile
 
+ 
+   Get-Module -Name VMware* -ListAvailable | Import-Module 
+   #Connect-viserver -server localhost -Username $ovcUsername -Password $ovcPassword
+   Connect-viserver -server moscowvc.cloud.local -Username $ovcUsername -Password $ovcPassword
 $template = Get-Template -Name $vmTemplate
 
 if( !$template)
@@ -177,39 +249,84 @@ Write-Host "VM name "$vm
 
 Start-VM -VM $vm
 write-Host "Powering on new Virtual machine"
-#"APPLOG| Powering on new Virtual machine " | WriteFile
+"APPLOG| Powering on new Virtual machine " | WriteFile
+start-sleep 30
 
 write-Host "***************** VM ip address ***************"
-write-Host -NoNewLine "Read updated Virtual Machine details from Vsphere"
-#"APPLOG| Read updated Virtual Machine details from Vsphere" | WriteFile
-
-$count = 20
-while ($vmIP -eq $null) {
-	Start-Sleep -s 10
-	Write-Host -NoNewLine "."
-
-	if ($count -eq 0) {
-	"ERRLOG| VM $vmName doesn't start properly"
-	Write-Error "VM $vmName doesn't start properly"
-		exit 1
-	}
-	$count = $count - 1
-	#write-Host "Count = "$count
-	$vmIP = ((Get-VM -Name $vm).Guest.IPAddress[0])
-	## check pattern match for ipv4
-	if( $vmIP -Match "[a-z]")
-	{
-		"ERRLOG| Got IPv6 address instead of IPv4 address '$vmIP'" | WriteFile
-		Write-Error "Got IPv6 address instead of IPv4 address '$vmIP'"
-		cleanUp $vm
-		exit -1
-	}
-	write-Host "VMIP = "$vmIP
-	
-}
 
 $vmPassword = ConvertTo-SecureString $vmPassword -AsPlainText -Force
 $localCreds = New-Object PSCredential($vmUsername, $vmPassword)
+
+if ($isStatic -eq "true")
+{
+	Write-Host "Assigning staticIP $staticIP to the VM $vmName"
+	$cmd = @"
+	New-NetIPAddress -IPAddress '$staticIP' -DefaultGateway '$gateway' -PrefixLength '$prefixLength' -InterfaceIndex (Get-NetAdapter).InterfaceIndex
+	Set-DNSClientServerAddress -InterfaceIndex (Get-NetAdapter).InterfaceIndex -ServerAddresses '$dnsserver'
+"@
+	Write-Host "Command for Static IP change"
+	Write-Host $cmd
+	$ts = 30
+	Invoke-VMScript -VM $vm -ScriptType Powershell -ScriptText $cmd -GuestCredential $localcreds #-ErrorAction Ignore -WarningAction Ignore
+	start-sleep $ts
+	$pingResponse = pingIp($staticIP)
+	Write-Host "PING RESPONSE:"$pingResponse
+	if(!$pingResponse)
+	{
+			"ERRLOG| VM $vmName didnt come up after assigning static IP" | WriteFile
+			Write-Error "VM $vmName didnt come up after assigning static IP"
+			
+			exit 1
+			
+	}	
+	start-sleep 30
+	$vm = Get-VM -Name $vmName
+	$newIP = ($vm.Guest.IPAddress[0])
+	Write-Host "NEW IP::"$newIP
+	Write-Host "STATIC IP::"$staticIP
+	if ($newIP -ne $staticIP)
+	{
+		Write-Error "ERRLOG|Static IP assignment Failed. Please make sure that the static IP given is free"
+		"ERRLOG|Static IP assignment Failed. Please make sure that the static IP given is free" | WriteFile
+		#cleanUp $vm
+		#exit -1
+	}
+	$vmIP = $newIP
+}
+else
+{
+	
+	write-Host -NoNewLine "Read updated Virtual Machine details from Vsphere"
+	#"APPLOG| Read updated Virtual Machine details from Vsphere" | WriteFile
+
+
+	$count = 20
+	while ($vmIP -eq $null) {
+		Start-Sleep -s 10
+		Write-Host -NoNewLine "."
+
+		if ($count -eq 0) {
+		"ERRLOG| VM $vmName doesn't start properly"  | WriteFile
+		Write-Error "VM $vmName doesn't start properly"
+			exit 1
+		}
+		$count = $count - 1
+		#write-Host "Count = "$count
+		$vmIP = ((Get-VM -Name $vm).Guest.IPAddress[0])
+		## check pattern match for ipv4
+		if( $vmIP -Match "[a-z]")
+		{
+			"ERRLOG| Got IPv6 address instead of IPv4 address '$vmIP'" | WriteFile
+			Write-Error "Got IPv6 address instead of IPv4 address '$vmIP'"
+			#cleanUp $vm
+			exit -1
+		}
+		write-Host "VMIP = "$vmIP
+	
+}
+
+}
+
 
 Write-Host "Changing the computer name to '$vmName'"
 $cmd = "Rename-Computer -NewName '$vmName' -Restart"
@@ -217,64 +334,99 @@ Invoke-VMScript -VM $vm -ScriptType Powershell -ScriptText $cmd -GuestCredential
 Start-Sleep -s 30
 Write-Host $localCreds
 
+$vm = Get-VM -Name $vmName
+
 $cmd = @"
 `$password = ConvertTo-SecureString '$adPassword' -AsPlainText -Force 
 `$adCreds = New-Object PSCredential('$adUsername', `$password)
 Add-Computer -DomainName '$adDomain' -Credential `$adCreds -Force -Restart
-
 "@
 
 Write-Host $cmd
 "APPLOG| Adding '$vmName' to AD domain '$adDomain'"  | WriteFile
 Write-Host "Adding '$vmName' to AD domain '$adDomain'"
 
-Write-Output "----Step 1:: Adding the VM to domain-------"
+Write-Output "----Step 1:: Adding the VM '$vmName' to domain-------"
       
 
-$domainResult = Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds -ErrorAction Ignore -WarningAction Ignore
+$domainResult = Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds  -ErrorAction Ignore -WarningAction Ignore
 
-Start-Sleep -s 15
-Write-Host "After the timeout"
+Start-Sleep -s 20
+
 
 Write-Host -NoNewLine "Waiting for reboot of VM $vmName"
-$cmd_disablefirewall ="Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False"
-$count = 15
-$delay = 20
 
-Write-Host "Checking whether the VM is up......"
+$pingResponse = pingIp($vmIP)
+if(!$pingResponse)
+{
+		"ERRLOG| VM $vmName didnt come up after updating domain" | WriteFile
+		Write-Error "VM $vmName didnt come up after updating domain"
+		exit 1
+		
+}
+#$cmd_disablefirewall ="Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False"
+#$count = 30
 
-While ($count) {
-	Start-Sleep -s 5
-	#Write-Output "Step-2::Count--"$count
-	try
+#Write-Host "Checking whether the VM is up......"
+
+#While ($count) {
+#	Start-Sleep -s 5
+#	#Write-Output "Step-2::Count--"$count
+#	try
+#	{
+#		if (Test-Connection -ComputerName  $vmIP -Count 1 -Quiet) {
+#			Write-Host "VM is up...."
+#			$count = 0
+#			break;
+#		}
+#		Write-Host -NoNewLine "."
+#		if ($count -eq 6){
+#			Write-Host "Disable Firewall"
+#			$firewallOutput = Invoke-VMScript -VM $vm -ScriptText $cmd_disablefirewall -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore -ErrorAction Ignore
+#		}
+#		$count = $count - 1
+#		if ($count -eq 0) {
+#			"ERRLOG| VM $vmName didnt come up after updating domain" | WriteFile
+#			Write-Error "VM $vmName didnt come up after updating domain"
+#			cleanUp $vm
+#			exit 1
+#		}
+#	}
+#	Catch
+#	{
+#	   "ERRLOG| Test-Connection Failed $_.ExceptionItemName  $_.Exception.Message" | WriteFile
+#       Write-Error " $_.ExceptionItemName $_.Exception.Message"
+#	}
+#}
+
+Write-Host "Domain name $vmName"
+
+Start-Sleep -s $sleep_time
+Write-Host (Get-VM $vmName).Guest.HostName
+
+if( !((Get-VM $vmName).Guest.HostName -Match $adDomain))
+{
+	Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds  -ErrorAction Ignore -WarningAction Ignore
+	#Start-Sleep -s 150
+	$pingResponse = pingIp($vmIP)
+	if(!$pingResponse)
 	{
-		if (Test-Connection -ComputerName  $vmIP -Count 1 -Quiet) {
-			Write-Host "VM is up...."
-			$count = 0
-			break;
-		}
-		Write-Host -NoNewLine "."
-		if ($count -eq 6){
-		Write-Host "Disable Firewall"
-			$firewallOutput = Invoke-VMScript -VM $vm -ScriptText $cmd_disablefirewall -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore -ErrorAction Ignore
-		}
-		$count = $count - 1
-		if ($count -eq 0) {
-			"ERRLOG| VM $vmName didnt come up after updating domain" | WriteFile
-			Write-Error "VM $vmName didnt come up after updating domain"
-			cleanUp $vm
-			exit 1
-		}
+		"ERRLOG| VM $vmName didnt come up after domain change" | WriteFile
+		Write-Error "VM $vmName didnt come up after domain change"
+		exit 1
+		
 	}
-	Catch
+	else
 	{
-	   "ERRLOG| Test-Connection Failed $_.ExceptionItemName  $_.Exception.Message" | WriteFile
-       Write-Error " $_.ExceptionItemName $_.Exception.Message"
+		Write-Host "VM '$vmName' is up after domain change "
 	}
+	
 }
 
-Write-Host "Domain name "
+Start-Sleep -s $sleep_time
+
 Write-Host (Get-VM $vmName).Guest.HostName
+
 if( !((Get-VM $vmName).Guest.HostName -Match $adDomain))
 {
 	"ERRLOG| VM $vmName didnt get added to domain" | WriteFile
@@ -326,14 +478,10 @@ $uri = "https://trust.citrixworkspacesapi.net/" +  $citrixCustomer + "/tokens/cl
 Write-Output $uri
 $temp = Convertto-json $body
 Write-Output $temp
-write-Output "Before error"
+
 
 $response = Invoke-RestMethod -Method Post -Body $temp -Uri $uri -ContentType 'application/json'
 $token = $response.token
-Write-Output "token 338:"$token 
-Write-Output "Response : "$response
-
-#$token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyX2lkIjoiNjgyNTM1MzA1OTQ1ODgwNTQ2MCIsInByaW5jaXBhbCI6InN1cHJlZXRoQGhwZS5jb20iLCJhY2Nlc3NfdG9rZW5fc2NvcGUiOiIiLCJyZWZyZXNoX3Rva2VuIjoiIiwiYWNjZXNzX3Rva2VuIjoiIiwiZGlzcGxheU5hbWUiOiJzdXByZWV0aCBzIiwicmVmcmVzaF9leHBpcmF0aW9uIjoiMTUzNjA4ODYxMDIxMSIsImN1c3RvbWVycyI6Ilt7XCJDdXN0b21lcklkXCI6XCJocGUzODNcIixcIkdlb1wiOlwiVVNcIn1dIiwiZW1haWxfdmVyaWZpZWQiOiJUcnVlIiwiY3R4X2F1dGhfYWxpYXMiOiJmM2I2MWU1NC1iNjk3LTQ1OTQtOTM2Zi02ZDZkMjU5MmE5NTMiLCJuYW1lIjoic3VwcmVldGggcyIsInN1YiI6IjY4MjUzNTMwNTk0NTg4MDU0NjAiLCJlbWFpbCI6InN1cHJlZXRoQGhwZS5jb20iLCJhbXIiOiJbXCJjbGllbnRcIl0iLCJpc3MiOiJjd3MiLCJleHAiOjE1MzYwNDkwMTAsIm5iZiI6MTUzNjA0NTQxMH0.jLg7_cIg403xfi2ODApXKQ72XuFQ93NjynpO5_9SKPeos6gsBVt558_72r26qXxIC39lxOSVyB4gbMLlNl-3lbCaCWhU_gqE03rMGSBx2ThjY4WkEW-8-QCHfqWQKlPhTDHSHJd5wqPaTs3Hvyn6NjLE3ikA0lZAfNo3-yQbLfPgOFPF-G0oGJpC0DACUCfk9mjBuk1v4V3bvay6XVfVqGlvUuKFdjIgltvS0TXmQ-fypwbvAsnAsJwIPRjWrKHddRQGmpn264vM3duPQIhj1cAcYVBX5ggg3dgma6HlcHgdcRKJcKnzyX-Ie4dVrri_P934Q7Le2q2uUCW11PE8Rg"
 
 $uri = "https://registry.citrixworkspacesapi.net/"+$citrixCustomer+"/resourcelocations"
 
@@ -345,7 +493,7 @@ $resources =  Invoke-RestMethod -Uri $uri -Method "Get" -ContentType "applicatio
 Write-Host "Resources: "$resources
 foreach($resource in $resources.items) {
     Write-Output $resource
-    Write-Host "$resource_location : $($location.id)"
+    Write-Host " $vmName $resource_location : $($location.id)"
     if ($resource.name -eq $citrixResourceLocation) {
         $resourceId = $resource.id
         break;
@@ -382,7 +530,7 @@ Invoke-WebRequest -Uri '$downloadsUri' -OutFile "C:\cwcconnector.exe"
 Start-Process c:\cwcconnector.exe '$params' -Wait
 "@
 
-Write-Host installscript
+Write-Host "installscript $vmName"
 #-----Diff compare lines
 "APPLOG| Starting Citrix Cloud installation on '$vmName'" | WriteFile
 $installationResult = Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds -WarningAction Ignore

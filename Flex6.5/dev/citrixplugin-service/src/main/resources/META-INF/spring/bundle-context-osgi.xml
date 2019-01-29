@@ -31,4 +31,7 @@
          
      <osgi:service id="ReadCfgFileService" ref="ReadCfgFileServiceImpl"
          interface="com.vmware.simplivity.citrixplugin.ReadCfgFileService" />
+         
+     <osgi:service id="OVCService" ref="OVCServiceImpl"
+         interface="com.vmware.simplivity.citrixplugin.OVCService" />
 </beans>

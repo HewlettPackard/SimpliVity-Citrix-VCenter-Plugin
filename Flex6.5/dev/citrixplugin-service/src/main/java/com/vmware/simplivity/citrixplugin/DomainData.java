@@ -42,8 +42,8 @@ public class DomainData {
 	@Override
 	public String toString() {
 		return "DomainData = {DomainName:"+domainName+", "+
-						"DomainUserName:"+dmnUserName+", "+
-						"DomainPassword:"+dmnPassword+"}";
+						"DomainUserName:"+dmnUserName+", "+"}";
+						//"DomainPassword:"+dmnPassword+"}";
 	}
 	
 	public boolean isEmpty()

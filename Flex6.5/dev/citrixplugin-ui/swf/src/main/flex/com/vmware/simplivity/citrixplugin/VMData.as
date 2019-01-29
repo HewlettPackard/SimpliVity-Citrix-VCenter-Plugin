@@ -16,5 +16,10 @@ package com.vmware.simplivity.citrixplugin
       public var vmPassword:String;
 	  public var vmCluster:String;
 	  public var vmHost:String;
+	  public var isStatic:Boolean;
+	  public var subnet:String;
+	  public var ipAddr:String;
+	  public var gateway:String;
+	  public var dnsServerAddress:String;
    }
 }

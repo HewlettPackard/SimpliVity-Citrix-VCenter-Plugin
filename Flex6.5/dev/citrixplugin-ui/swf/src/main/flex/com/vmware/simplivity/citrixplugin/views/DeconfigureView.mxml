@@ -38,7 +38,7 @@
 					vmHost.text = selectedVmItem.vmHost;
 					rowNumber = selectedVmItem.rowNumber;
 					domainName.text = selectedVmItem.domainName;
-					dmnUserName.text = selectedVmItem.dmnUserName;
+					dmnUserName.text = selectedVmItem.domainUserName;
 					vmUserName.text = selectedVmItem.vmUserName;
 				 }
 			 }
@@ -95,24 +95,7 @@
 				<!--mx:Label text="Username*" fontWeight="bold" width="150"/-->
 				
 			</mx:VBox>
-			
-			<!-- OVC box -->
-			<mx:VBox paddingTop="10" paddingBottom="10" paddingLeft="10" paddingRight="10">
-				<mx:Label text="Simplivity Information" styleName="mainText" />
-				<mx:HBox width="150%" textAlign="left">
-					<mx:Label text="OVC IP" fontWeight="bold" width="150"/>
-					<mx:TextInput id="ovcIP" width="150"/>
-				</mx:HBox>
-				<mx:HBox width="150%" textAlign="left">
-					<mx:Label text="UserName" fontWeight="bold" width="150"/>
-					<mx:TextInput id="ovcUsername" width="150"/>
-				</mx:HBox>
-				<mx:HBox width="150%" textAlign="left">
-					<mx:Label text="Password" fontWeight="bold" width="150"/>
-					<mx:TextInput id="ovcPassword" width="150"  displayAsPassword="true"/>
-				</mx:HBox>
-			</mx:VBox>
-			
+						
 		</mx:HBox>   
 	</mx:VBox>
 		  <mx:ArrayCollection id="ac">

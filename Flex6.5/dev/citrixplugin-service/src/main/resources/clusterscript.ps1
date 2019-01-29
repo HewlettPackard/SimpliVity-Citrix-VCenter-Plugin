@@ -12,7 +12,8 @@ filter WriteFile {
 	#"$(Get-Date -Format G) | $_" | Tee -FilePath $logFile -Append
 	"$(Get-Date -UFormat '%b  %e %T')|$hostname|$_" | Out-File -FilePath $logFile -Append -Encoding ASCII 
 }
-Set-ExecutionPolicy Unrestricted -Force
+
+set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
 
 Try {
 
@@ -21,7 +22,8 @@ Try {
     Import-LocalizedData -BindingVariable input -BaseDirectory $base_dir -FileName $file
 	
 	# Read input for VM Creation
-    $vcenterName = $input.cluster.vcenterName
+    $username = $input.cluster.username
+	$password = $input.cluster.password
 	$outputFile = $input.cluster.clusterOutput
 }
 
@@ -31,11 +33,12 @@ Catch {
        exit 1
     }
 
-	Write-Host "Vcenter=="$vcenterName
+	Write-Host "Username=="$username
+    Write-Host "Password=="$password
 	Write-Host "OUtpu: "$outputFile
-	#Get-Module -Name VMware* -ListAvailable 
-	Write-Host "After listing......"
-	#Install-Module -name VMWare.PowerCLI -Scope "CurrentUser" -Confirm:$false
-Get-Module -Name VMware* -ListAvailable | Import-Module
-Connect-VIServer -Server $vcenterName 
-Get-vmhost | Select Name, @{N="Cluster";E={Get-Cluster -VMHost $_}} |Export-csv $outputFile
+	Get-Module -Name VMware* -ListAvailable | Import-Module 
+	#Connect-VIServer -Server localhost -Username $username -Password $password
+	Connect-viserver -server moscowvc.cloud.local -Username $username -Password $password
+	
+	Get-vmhost | Select Name, @{N="Cluster";E={Get-Cluster -VMHost $_}} |Export-csv $outputFile
+	Write-Host "......End of Cluster Script......"

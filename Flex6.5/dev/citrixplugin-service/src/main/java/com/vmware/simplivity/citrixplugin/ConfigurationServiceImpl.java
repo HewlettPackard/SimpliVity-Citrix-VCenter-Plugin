@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 
 public class ConfigurationServiceImpl implements ConfigurationService 
@@ -51,7 +52,20 @@ public class ConfigurationServiceImpl implements ConfigurationService
 		
 		if(proxyData != null)
 		{
+			msg = "Setting Proxy Data:"+proxyData;
+			System.out.println(msg);
+			logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
 			configureInputData.setProxyData(proxyData);
+		}
+		
+		OVCData ovcData = fileUtil.getOVCData();
+		
+		if(ovcData != null)
+		{
+			msg = "Setting OVC Data:"+ovcData;
+			System.out.println(msg);
+			logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
+			configureInputData.setOvcData(ovcData);
 		}
 		
 		if(!prepareInputFile(configureInputData))
@@ -82,13 +96,15 @@ public class ConfigurationServiceImpl implements ConfigurationService
 				List<DeconfigureTableEntry> deconfigTableEntries = constructDeconfigureTableEntries(configureInputData);
 				writeDeconfigureEntryToFile(deconfigTableEntries);
 				fileUtil.deleteFile(tempSrcPath);
-				msg = "Configuration done. Check the log file for more information. Please check the logs for more information.";
+				msg = "Configuration done. Check the log file for more information.";
+				System.out.println(msg);
+				logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
 				break;
 			}
 			case FAILURE:
 			case PARTIALSUCCESS:
 			{
-				msg = "Error occured while configuring. Please check the logs for more information.";
+				msg = "Error occured while configuring. Please check the logs"+logUtil.getLogFilePath()+" for more information.";
 			}
 			default:
 		}
@@ -106,17 +122,29 @@ public class ConfigurationServiceImpl implements ConfigurationService
 	 */
 	private boolean prepareInputFile(ConfigureInputData configureInputData) 
 	{
-		System.out.println("Entered prepareInputFile method."+configureInputData);
+		msg = "Entered prepareInputFile method."+configureInputData;
+		System.out.println(msg);
+		logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
 		List<String> filenameList = new ArrayList<String>();
         for ( int ix = 0; ix < configureInputData.getVmData().size(); ix++ )
-        {   
-        	System.out.println("prepareInputFile Loop: "+ix);
+        {
+        	
             String sFileLine = "@{\r\nvm = \r\n\t@{\r\n";
             sFileLine += "\tname = " + "\'" + configureInputData.getVmData().get(ix).getVmName()  + "\'\r\n" +
                         "\ttemplate = " + "\'" + configureInputData.getTemplate() +"\'\r\n" +
                         "\thost = " + "\'" + configureInputData.getVmData().get(ix).getVmHost() +"\'\r\n" +
-                        "\tusername =  " + "\'" + configureInputData.getVmData().get(ix).getVmUserName() +"\'\r\n" +
-                        "\tpassword = " + "\'" + configureInputData.getVmData().get(ix).getVmPassword() +"\'\r\n \t}\r\n";
+                        "\tusername =  " + "\'" + configureInputData.getVmData().get(ix).getVmUsername() +"\'\r\n" +
+                        "\tpassword = " + "\'" + configureInputData.getVmData().get(ix).getVmPassword() +"\'\r\n" +
+                        "\tisstatic = " + "\'" + configureInputData.getVmData().get(ix).isStatic()  + "\'\r\n";
+            
+            if(configureInputData.getVmData().get(ix).isStatic())
+            {
+        	   sFileLine += "\tip = " + "\'" + configureInputData.getVmData().get(ix).getIpAddr()  + "\'\r\n" +
+                       "\tprefixlength = " + "\'" + getSubnetPrefix(configureInputData.getVmData().get(ix).getSubnet()) +"\'\r\n" +
+                       "\tgateway =  " + "\'" + configureInputData.getVmData().get(ix).getGateway() +"\'\r\n"+
+                       "\tdnsserver =  " + "\'" + configureInputData.getVmData().get(ix).getDnsServerAddress() +"\'\r\n";;
+            }
+            sFileLine += " \t}\r\n";
           
             sFileLine += "ad = \r\n\t@{\r\n";
             sFileLine += "\tdomain = " + "\'" + configureInputData.getDomainData().getDomainName() +"\'\r\n" +
@@ -128,14 +156,14 @@ public class ConfigurationServiceImpl implements ConfigurationService
                         "\tovcusername = " + "\'" + configureInputData.getOvcData().ovcUsername +"\'\r\n" +
                         "\tovcpassword = " + "\'" + configureInputData.getOvcData().getOVCPassword() +"\'\r\n \t}\r\n";
             
-           if(configureInputData.getProxyData() != null)
-           {
-        	   sFileLine += "proxy = \r\n\t@{\r\n";
-               sFileLine += "\tproxyip = " + "\'" + configureInputData.getProxyData().getProxyIP() +"\'\r\n" +
+            if(configureInputData.getProxyData() != null)
+            {
+            	sFileLine += "proxy = \r\n\t@{\r\n";
+                sFileLine += "\tproxyip = " + "\'" + configureInputData.getProxyData().getProxyIP() +"\'\r\n" +
                			"\tproxyport = " + "\'" + configureInputData.getProxyData().getProxyPort() +"\'\r\n" +
                            "\tproxyusername = " + "\'" + configureInputData.getProxyData().getProxyUserName() +"\'\r\n" +
                            "\tproxypassword = " + "\'" + configureInputData.getProxyData().getProxyPassword() +"\'\r\n \t}\r\n";
-           }
+            }
           
             sFileLine += "citrix = \r\n\t@{\r\n";
             sFileLine += "\tclientId = " + "\'" + configureInputData.getCitrixData().getClientId() +"\'\r\n" +
@@ -158,6 +186,43 @@ public class ConfigurationServiceImpl implements ConfigurationService
         return true;
 	}
 
+	private int getSubnetPrefix(String subnet)
+	{
+		msg = "Entered getSubnetPrefix method: "+subnet;
+		System.out.println(msg);
+		logUtil.log(LEVEL.DEBUG, msg, clazz, logUtil.getLineNumber());
+		
+		StringTokenizer st = new StringTokenizer(subnet, ".");
+		int octs[] = new int[4];
+		int i = 0, prefixLength = 0;
+		try
+		{
+			while(st.hasMoreElements())
+			{
+				octs[i] = Integer.valueOf(st.nextToken());
+				i++;
+			}
+		}
+		catch(NumberFormatException noe)
+		{
+			msg = "Error in converting IP octtes "+noe; 
+			System.out.println(msg);
+			logUtil.log(LEVEL.ERROR, msg, clazz, logUtil.getLineNumber());
+		}
+		
+		for(int j = 0; j< octs.length; j++)
+		{
+			String binary = Integer.toBinaryString(octs[j]);
+			for(int k=0; k<binary.length();k++)
+			{
+				if(binary.charAt(k) == '1')
+				{
+					prefixLength++;
+				}
+			}
+		}
+		return prefixLength;
+	}
 	/** Method: constructDeconfigureTableEntries
 	 * 
 	 *  Description: Creates the DeconfigureEntries that needs to be saved.
@@ -184,7 +249,7 @@ public class ConfigurationServiceImpl implements ConfigurationService
 		{
 			DeconfigureTableEntry entry = new DeconfigureTableEntry();
 			entry.setVmName(configureInputData.getVmData().get(i).getVmName());
-			entry.setVmUserName(configureInputData.getVmData().get(i).getVmUserName());
+			entry.setVmUserName(configureInputData.getVmData().get(i).getVmUsername());
 			entry.setVmHost(configureInputData.getVmData().get(i).getVmHost());
 			entry.setVmCluster(configureInputData.getVmData().get(i).getVmCluster());
 			entry.setDomainName(configureInputData.getDomainData().getDomainName());

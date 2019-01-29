@@ -93,8 +93,7 @@ public class ClusterServiceImpl implements ClusterService
     	tempScriptPath = fileUtil.getTempLocation() + "tempClusterscript.ps1";
     	
     	fileUtil.copyFileUsingFileChannels(clusterScript, tempScriptPath);
-    	String vcenterName = "localhost";
-    	
+    	    	
     	try
     	{
     		/* Creating input file foe cluster Script*/
@@ -102,8 +101,9 @@ public class ClusterServiceImpl implements ClusterService
     		inputFileObj.setWritable(true);
     		FileWriter fw = new FileWriter(inputFile);
             String sFileLine = "@{\r\ncluster = \r\n\t@{\r\n";
-            sFileLine += "\tvcenterName = " + "\'" + vcenterName  + "\'\r\n" +
-                    "\tclusterOutput = " + "\'" + outputFile +"\'\r\n \t}\r\n}\r" ;
+            sFileLine += "\tusername = " + "\'" + fileUtil.getOVCData().getOVCUserName()  + "\'\r\n" ;
+            sFileLine +="\tpassword = " + "\'" + fileUtil.getOVCData().getOVCPassword()  + "\'\r\n" ;
+            sFileLine += "\tclusterOutput = " + "\'" + outputFile +"\'\r\n \t}\r\n}\r" ;
             System.out.println(sFileLine);
             fw.write(sFileLine);
             fw.close();

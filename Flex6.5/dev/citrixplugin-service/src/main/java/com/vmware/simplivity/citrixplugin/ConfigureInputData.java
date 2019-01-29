@@ -55,7 +55,7 @@ public class ConfigureInputData extends BaseInputData
 	public boolean isEmpty()
 	{
 		if(super.isEmpty() || citrixData == null || citrixData.isEmpty() ||
-				template == null || template.isEmpty())
+				template == null || template.isEmpty() || vmData == null || vmData.isEmpty())
 		{
 			return true;
 		}

@@ -63,14 +63,14 @@ public class ReadCfgFileServiceImpl implements ReadCfgFileService
 		citrixData.setCustomerName(cfgEntryMap.get(ConfigurationConstants.CUSTOMER_NAME.toString()));
 		citrixData.setResourceLocation(cfgEntryMap.get(ConfigurationConstants.RESOURCE_LOCATION.toString()));
 		
-		OVCData ovcData = new OVCData();
+		/*OVCData ovcData = new OVCData();
 		ovcData.setOVCIP(cfgEntryMap.get(ConfigurationConstants.OVC_IP.toString()));
 		ovcData.setOVCUserName(cfgEntryMap.get(ConfigurationConstants.OVC_USERNAME.toString()));
-		ovcData.setOVCPassword(cfgEntryMap.get(ConfigurationConstants.OVC_PASSWORD.toString()));
+		ovcData.setOVCPassword(cfgEntryMap.get(ConfigurationConstants.OVC_PASSWORD.toString()));*/
 		
 		configureInputData.setDomainData(domainData);
 		configureInputData.setCitrixData(citrixData);
-		configureInputData.setOvcData(ovcData);
+		//configureInputData.setOvcData(ovcData);
 		configureInputData.setTemplate(cfgEntryMap.get(ConfigurationConstants.VM_TEMPLATE.toString()));
 		
 		msg = "Content read from cfg file: "+configureInputData;

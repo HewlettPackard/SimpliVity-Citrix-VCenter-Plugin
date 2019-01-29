@@ -36,5 +36,8 @@
    
      <osgi:reference id="ReadCfgFileService" interface="com.vmware.simplivity.citrixplugin.ReadCfgFileService"/>
    <flex:remoting-destination ref="ReadCfgFileService" message-broker="citrixplugin-ui-broker"/>
+   
+   <osgi:reference id="OVCService" interface="com.vmware.simplivity.citrixplugin.OVCService"/>
+   <flex:remoting-destination ref="OVCService" message-broker="citrixplugin-ui-broker"/>
 </beans>
 

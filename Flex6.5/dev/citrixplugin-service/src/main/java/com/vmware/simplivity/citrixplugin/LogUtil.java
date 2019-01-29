@@ -62,11 +62,12 @@ public class LogUtil
 	public void log(LEVEL level, String msg, Class clazz, int lineNumber)
 	{
 		FileWriter fw = null;
+		boolean appendFlag = true;
 		try
 		{
 			File file = new File(logFileName);
 			double size = file.length()/1024;
-			if(size > 1500)
+			if(size > 60000)
 			{
 				String ch = logFileName.substring(logFileName.length()-5, logFileName.length()-4);
 				if(Character.isDigit(ch.charAt(0)))
@@ -77,12 +78,16 @@ public class LogUtil
 				}
 				else
 				{
-					logFileName = logFileName.substring(0, logFileName.length()-5)+"1"+logFileName.substring(logFileName.length()-4);
+					logFileName = logFileName.substring(0, logFileName.length()-4)+"1"+logFileName.substring(logFileName.length()-4);
 				}
+				//fw = new FileWriter(logFileName);
+				appendFlag = false;
 			}
-			fw = new FileWriter(logFileName,true);
+			
 			String temp = getCurrentTime()+level.toString()+" "+clazz.getSimpleName()+":"+lineNumber+" "+msg+"\n";
+			fw = new FileWriter(logFileName,appendFlag);
 			synchronized (fw) {
+				
 				fw.write(temp);
 			}
 			
@@ -163,4 +168,5 @@ public class LogUtil
 	    }
 	    return -1;
 	}
+	
 }
