@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: simplivity-citrixplugin-ui
+Bundle-SymbolicName: com.vmware.simplivity.citrixplugin.ui
+Bundle-Version: 1.0.0
+Bundle-Vendor: VMware
+Web-ContextPath: ui/simplivity-citrixplugin
+Import-Package: com.vmware.simplivity.citrixplugin.controllers;version="1.0.0",
+ com.vmware.simplivity.citrixplugin.services;version="1.0.0",
+ com.vmware.vise.security;version="0",
+ org.eclipse.virgo.web.dm;version="3.6.0",
+ org.springframework.web.servlet;version="4.2.9",
+ org.springframework.web.servlet.config;version="4.2.9"
+

@@ -1,0 +1,151 @@
+<head>
+<style>
+td {
+     text-align: left;
+}
+titlebar-text {
+    max-width: 85%;
+    display: inline-block;
+}
+</style>
+</head>
+
+<div class="viewTitle"></div>
+<div></div>
+<div> <label>Note:</label>Select the platform and enter the credentials. If vCenter is not deployed on Windows, Please provide remote windows VM details</div>
+
+<div class="alert alert-success" *ngIf="showSuccessMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="check-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{ovcmsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger" *ngIf="showFailureMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="is-error" shape="info-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{errormsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div ng-app="app" align="left">
+
+<form clrForm (ngSubmit)="onSubmit()" class="modal-content-chassis" name="mainForm">
+<section class="form-block">
+
+<div>
+<table style="border-spacing:18px;">
+<tr>
+	<td><h3><span class="titlebar-text">OVC/ILO Information</span></h3></td>
+	<td><h3><span class="titlebar-text">Remote Windows Information</span></h3></td>
+</tr>
+<tr>
+	<td>
+		<table style="border-spacing:10px;">
+		<!-- <tr><h3><span class="titlebar-text">OVC/ILO Information</span></h3></tr> -->
+		<!-- <tr><td><br/></td></tr> -->
+		<tr>
+			<td  width="80%">
+				<label>  
+		               <input type="radio" name="platform" value="Simplivity" (click)="setradio('Simplivity')" [checked]='true' ngModel>  
+		               SimpliVity  
+		           </label> 
+			</td>
+			<td  width="80%">
+				<label>  
+		               <input type="radio" name="platform" value="NonSimplivity" (click)="setradio('NonSimplivity')" ngModel>  
+		               HPE Platform  
+		           </label>
+			</td>
+		</tr>
+		<tr>
+			<td  width="80%">
+				<label  *ngIf="isSelected('Simplivity')" ><span>OVC IPAddress <span class="color:red">*</span></span></label>
+		 		<label  *ngIf="isSelected('NonSimplivity')" ><span>ILO IPAddress</span></label>
+			</td>
+			<td>
+				<input clrInput type="text" placeholder="IP Address" id="ovcIP" name="ovcIP" [(ngModel)]="ovcdata.ovcIP"
+					(ngModelChange)="setIP($event)" ng-ip-address size="30px"/>
+			</td>
+		</tr>
+		<tr>
+			<td  width="80%">
+				<label  *ngIf="isSelected('Simplivity')" ><span>OVC Username <span class="color:red">*</span></span></label>
+		 		<label  *ngIf="isSelected('NonSimplivity')" ><span>vCenter Username<span class="color:red">*</span></span></label>
+			</td>
+			<td>
+				<input clrInput type="text" placeholder="Username" id="ovcUsername" name="ovcUsername" [(ngModel)]="ovcdata.ovcUsername" 
+				(ngModelChange)="setUsername($event)"  required size="30px"/>
+			</td>
+			</tr>
+			<tr>
+				<td >
+				<label  *ngIf="isSelected('Simplivity')" ><span>OVC Password <span class="color:red">*</span></span></label>
+		 		<label  *ngIf="isSelected('NonSimplivity')" ><span>vCenter Password<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="Password" id="ovcPassword" name="ovcPassword" [(ngModel)]="ovcdata.ovcPassword" 
+					(ngModelChange)="setPassword($event)" required size="30px"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+
+	<td>
+		<table style="border-spacing:10px;" >
+		
+		<!-- <tr><h3><span class="titlebar-text">Remote Windows Information</span></h3></tr> -->
+		<!-- <tr><td><br/></td></tr> -->
+		<tr><td><br/></td></tr>
+		<tr>
+			<td   width="80%">
+				<label><span>Windows IPAddress</span></label>
+			</td>
+			<td>
+				<input clrInput type="text" placeholder="IP Address" id="winIP" name="winIP" [(ngModel)]="remoteWin.winIP" size="30px"/>
+			</td>
+		</tr>
+		<tr>
+			<td  width="80%">
+				<label ><span>Username </span></label>
+			</td>
+			<td>
+				<input clrInput type="text" placeholder="Username" id="winUsername" name="winUsername" [(ngModel)]="remoteWin.winUsername" size="30px"/>
+			</td>
+			</tr>
+			<tr>
+				<td  width="80%">
+					<label ><span>Password </span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="Password" id="winPassword" name="winPassword" [(ngModel)]="remoteWin.winPassword" size="30px"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+</table>
+</div>
+
+  <div class="modal-footer">
+            <button class="btn" (click)="onCancel()" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary"
+                     id="saveBtn">OK</button>
+   </div>
+   </section>
+        
+</form>
+
+    </div>

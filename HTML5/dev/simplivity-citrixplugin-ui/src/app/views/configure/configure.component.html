@@ -1,0 +1,309 @@
+<head>
+<style>
+td {
+     text-align: left;
+}
+titlebar-text {
+    max-width: 85%;
+    display: inline-block;
+}
+</style>
+</head>
+
+<div class="viewTitle">Configure</div>
+
+<div> <strong>Note:</strong>All the fields are mandatory</div>
+
+<div class="alert alert-success" *ngIf="showSuccessMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="check-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{ovcmsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger" *ngIf="showFailureMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="is-error" shape="info-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{errormsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info" *ngIf="showInfoMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="is-error" shape="info-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{infomsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div  ng-app="app" > <!-- style="border-style:solid;border-color:red;border-spacing:1px;"> -->
+
+<form clrForm (ngSubmit)="onSubmit()" class="modal-content-chassis" name="mainForm">
+<section class="form-block">
+
+<div><!--  style="border-style:solid;border-color:coral;border-spacing:1px;"> -->
+<table style="border-spacing:10px;" border="0" >
+<tr>
+	<td><h3><span class="titlebar-text">Domain Information</span></h3></td>
+	<td><h3><span class="titlebar-text">Citrix Information</span></h3></td>
+</tr>
+<tr>
+	<td>
+		<table border="0" style="border-spacing:10px;">
+			<!-- <tr><h3 style="text-align:center;">Domain Information</h3></tr> -->
+			<tr>
+				<td width="80%">
+					<label ><span>Domain Name<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="demo.local" id="dmnName" name="dmnName" [(ngModel)]="domaindata.domainName" 
+					(ngModelChange)="setDomainName($event)"  required size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label><span>Username<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="Username" id="dmnUsername" name="dmnUsername" [(ngModel)]="domaindata.dmnUserName" 
+					(ngModelChange)="setDomainUsername($event)"  required size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Password<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="*******" id="dmnPassword" name="dmnPassword" [(ngModel)]="domaindata.dmnPassword" 
+					(ngModelChange)="setDomainPassword($event)"  required size="30px"/>
+				</td>
+			</tr>
+			<tr></tr>
+		</table>
+	</td>
+	<td>
+		<table border="0" style="border-spacing:8px;">
+			<!-- <tr><h3 style="text-align:center;">Citrix Information</h3></tr> -->
+			<tr>
+				<td  width="80%">
+					<label ><span>Citrix Key<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="demo.local" id="citrixKey" name="citrixKey" [(ngModel)]="citrixdata.citrixKey" 
+					(ngModelChange)="setCitrixKey($event)"  required size="40px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label><span>Customer Name<span style="color:red;">*</span></span></label>
+				</td>
+				<td width="80px">
+					<input clrInput type="text" placeholder="customer name" id="customerName" name="customerName" [(ngModel)]="citrixdata.customerName" 
+					(ngModelChange)="setCustomerName($event)"  required size="40px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>ClientID<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="client id" id="clientId" name="clientId" [(ngModel)]="citrixdata.clientId" 
+					(ngModelChange)="setClientId($event)"  required size="40px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Resource Location<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="Resource Location" id="resourceLocation" name="resourceLocation" [(ngModel)]="citrixdata.resourceLocation" 
+					(ngModelChange)="setResourceLocation($event)"  required size="40px"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+<tr>
+	<td><h3><span class="titlebar-text">Simplivity Information</span></h3></td>
+	<td><h3><span class="titlebar-text">Template Information</span></h3></td>
+</tr>
+<tr>
+	<td>
+		<table border="0" style="border-spacing:10px;">
+			<tr>
+				<td width="100%">
+					<label><span>Cluster<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<select name="cluster" id="cluster" [(ngModel)]="vmdata.vmCluster" (change)="getHosts()" style="width:280px" > <!-- ng-options="item for item in clusters"> -->
+					 <option *ngFor="let item of clusters">{{item}}</option> 
+					</select>
+				</td>
+			</tr>
+		</table>
+	</td>
+	<td>
+		<table border="0" style="border-spacing:10px;">
+			<tr>
+				<td width="80%">
+					<label ><span>Windows Image Template<span style="color:red;">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" id="template" name="template" [(ngModel)]="configureInput.template" 
+					(ngModelChange)="setTemplate($event)"  required size="32px"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+
+</table>
+</div>
+
+<div ><!-- style="border-style:solid;border-color:purple;border-spacing:1px"> -->
+<table style="border-spacing:1px" border="0" >
+	<tr style="height:10px;">
+		<td style="width:150px;" ><h4><span class="titlebar-text">Properties</span></h4></td>
+		<td style="text-align:center;" width="42%"><h4><span class="titlebar-text">VM1</span></h4></td>
+		<td style="text-align:center;" width="42%"><h4><span class="titlebar-text">VM2</span></h4></td>
+	</tr>
+</table>
+<table style="border-spacing:8px" border="0" >
+	<!-- <tr style="height:10px;">
+		<td style="width:150px;" ><label style="font-size:18;"><span class="titlebar-text">Properties</span></label></td>
+		<td style="text-align:center;" width="45%"><label style="font-size:18;"><span class="titlebar-text">VM1</span></label></td>
+		<td style="text-align:center;" ><label style="font-size:18;"><span class="titlebar-text">VM2</span></label></td>
+	</tr> -->
+	<tr style="height:5px;">
+		<td  ><label style="font-size:18;width:150px;"><span  class="titlebar-text">VM Name<span style="color:red">*</span></span></label></td>
+		<td width="42%">
+			<input clrInput type="text" placeholder="CC01" id="vmName1" name="vmName1" [(ngModel)]="vmdata1.vmName" required size="35px"/>
+		</td>
+		<td width="42%">
+			<input clrInput type="text" placeholder="CC02" id="vmName2" name="vmName2" [(ngModel)]="vmdata2.vmName" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;">
+		<td ><label style="font-size:18;"><span class="titlebar-text">VM Username<span style="color:red">*</span></span></label></td>
+		<td>
+			<input clrInput type="text" placeholder="Username" id="vmUsername1" name="vmUsername1" [(ngModel)]="vmdata1.vmUsername" required size="35px"/>
+		</td>
+		<td>
+			<input clrInput type="text" placeholder="Username" id="vmUsername2" name="vmUsername2" [(ngModel)]="vmdata2.vmUsername" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;">
+		<td ><label style="font-size:18;"><span class="titlebar-text">Password<span style="color:red">*</span></span></label></td>
+		<td>
+			<input clrInput type="password" placeholder="*******" id="vmPassword1" name="vmPassword1" [(ngModel)]="vmdata1.vmPassword" required size="35px"/>
+		</td>
+		<td>
+			<input clrInput type="password" placeholder="*******" id="vmPassword2" name="vmPassword2" [(ngModel)]="vmdata2.vmPassword" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;">
+		<td ><label style="font-size:18;"><span class="titlebar-text"style>VM Host<span class="color:red;">*</span></span></label></td>
+		<td>
+			<select name="vmHost1" id="vmHost1" [(ngModel)]="vmdata1.vmHost" style="width:300px" (change)="validatePlatform()">
+					  <option *ngFor="let x of hosts">{{x}}</option>
+			</select>
+		</td>
+		<td>
+			<select name="vmHost2" id="vmHost2" [(ngModel)]="vmdata2.vmHost" style="width:300px" (change)="validatePlatform()">
+					  <option *ngFor="let x of hosts">{{x}}</option>
+			</select>
+		</td>
+	</tr>
+	<tr style="height:5px;">
+		<td ><label style="font-size:18;"><span class="titlebar-text">IP Assignment<span style="color:red;">*</span></span></label></td>
+		<td>
+			<label>  
+				<input type="radio" name="isstaiccheck1" value="DHCP" (click)="setradio1('DHCP')" checked ngModel>DHCP 
+			</label>
+		
+			<label>  
+				<input type="radio" name="isstaiccheck1" value="Static IP" (click)="setradio1('StaticIP')" ngModel> Static IP  
+			</label>
+		</td>
+		<td>
+			<label>  
+				<input type="radio" name="isstaiccheck2" value="DHCP" (click)="setradio2('DHCP')" checked ngModel>DHCP 
+			</label>
+		
+			<label>  
+				<input type="radio" name="isstaiccheck2" value="Static IP" (click)="setradio2('StaticIP')" ngModel> Static IP  
+			</label>
+		</td>
+	</tr>
+	<tr  style="height:5px;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+		<td ><label style="font-size:18;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+			<span class="titlebar-text">IP Address<span style="color:red;">*</span></span></label></td>
+		<td>
+			<input *ngIf="isSelected1('StaticIP')" clrInput type="text"  id="ipAddr1" name="ipAddr1" [(ngModel)]="vmdata1.ipAddr" required size="35px"/>
+		</td>
+		<td>
+			<input *ngIf="isSelected2('StaticIP')" clrInput type="text"  id="ipAddr2" name="ipAddr2" [(ngModel)]="vmdata2.ipAddr" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+		<td ><label style="font-size:18;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+			<span class="titlebar-text">Subnet<span style="color:red;">*</span></span></label></td>
+		<td>
+			<input *ngIf="isSelected1('StaticIP')" clrInput type="text"  id="subnet1" name="subnet1" [(ngModel)]="vmdata1.subnet" required size="35px"/>
+		</td>
+		<td>
+			<input *ngIf="isSelected2('StaticIP')" clrInput type="text"  id="subnet2" name="subnet2" [(ngModel)]="vmdata2.subnet" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+		<td ><label style="font-size:18;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+			<span class="titlebar-text">Gateway<span style="color:red;">*</span></span></label></td>
+		<td>
+			<input *ngIf="isSelected1('StaticIP')" clrInput type="text" id="gateway1" name="gateway1" [(ngModel)]="vmdata1.gateway" required size="35px"/>
+		</td>
+		<td>
+			<input *ngIf="isSelected2('StaticIP')" clrInput type="text" id="gateway2" name="gateway2" [(ngModel)]="vmdata2.gateway" required size="35px"/>
+		</td>
+	</tr>
+	<tr style="height:5px;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+		<td ><label style="font-size:18;" *ngIf="isSelected1('StaticIP') || isSelected2('StaticIP')">
+			<span class="titlebar-text">DNS Server<span style="color:red;">*</span></span></label></td>
+		<td>
+			<input *ngIf="isSelected1('StaticIP')" clrInput type="text" id="dnsServerAddress1" name="dnsServerAddress1" [(ngModel)]="vmdata1.dnsServerAddress" 
+				required size="35px"/>
+		</td>
+		<td>
+			<input *ngIf="isSelected2('StaticIP')" clrInput type="text" id="dnsServerAddress2" name="dnsServerAddress2" [(ngModel)]="vmdata2.dnsServerAddress" 
+			required size="35px"/>
+		</td>
+	</tr>
+</table>
+</div>
+
+  <div class="modal-footer">
+            <button class="btn" (click)="onCancel()" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary"
+                     id="saveBtn">Configure</button>
+   </div>
+   </section>
+        
+</form>
+
+    </div>

@@ -1,0 +1,177 @@
+<head>
+<style>
+td {
+     text-align: left;
+}
+</style>
+</head>
+
+<div class="viewTitle">Deconfigure</div>
+<div></div>
+<div> <strong>Note:</strong>Select the VM and click on Update Fields button and enter the password of domain and the VM</div>
+
+<div class="alert alert-success" *ngIf="showSuccessMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="alert-icon" shape="check-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{ovcmsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-danger" *ngIf="showFailureMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="is-error" shape="info-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{errormsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info" *ngIf="showInfoMessage">
+    <div class="alert-items">
+        <div class="alert-item static">
+            <div class="alert-icon-wrapper">
+                <clr-icon class="is-error" shape="info-circle"></clr-icon>
+            </div>
+             <span class="alert-text">
+                {{infomsg}}
+            </span>
+        </div>
+    </div>
+</div>
+
+<div  ng-app="app" align="left" position="relative">
+
+<form clrForm (ngSubmit)="onSubmit()" class="modal-content-chassis" name="mainForm">
+<section class="form-block">
+
+<div>
+<table style="border-spacing:20px;">
+<tr>
+	<td><h3 style="text-align:center;">Domain Information</h3></td>
+	<td><h3 style="text-align:center;">VM Information</h3></td>
+</tr>
+<tr>
+	<td>
+		<table >
+			<tr>
+				<td width="80%">
+					<label ><span>Domain Name<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="demo.local" id="dmnName" name="dmnName" [(ngModel)]="domaindata.domainName" disabled size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label><span>Username<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="Username" id="dmnUsername" name="dmnUsername" [(ngModel)]="domaindata.dmnUserName" disabled size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Password<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" placeholder="*******" id="dmnPassword" name="dmnPassword" [(ngModel)]="domaindata.dmnPassword" required size="30px"/>
+				</td>
+			</tr>
+			<tr><td><br/></td></tr>
+			<tr><td><br/></td></tr>
+		</table>
+	</td>
+	<td>
+		<table>
+			<tr>
+				<td width="80%">
+					<label ><span>VM Name<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" placeholder="CC01" id="vmName" name="vmName" [(ngModel)]="vmdata.vmName" disabled size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label><span>Username<span class="color:red">*</span></span></label>
+				</td>
+				<td width="100px">
+					<input clrInput type="text" placeholder="Username" id="vmUsername" name="vmUsername" [(ngModel)]="vmdata.vmUsername" disabled size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Password<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="password" id="vmPassword" name="vmPassword" [(ngModel)]="vmdata.vmPassword" required size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Host name<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" id="vmHost" name="vmHost" [(ngModel)]="vmdata.vmHost" disabled size="30px"/>
+				</td>
+			</tr>
+			<tr>
+				<td width="80%">
+					<label ><span>Cluster name<span class="color:red">*</span></span></label>
+				</td>
+				<td>
+					<input clrInput type="text" id="vmCluster" name="vmCluster" [(ngModel)]="vmdata.vmCluster" disabled size="30px"/>
+				</td>
+			</tr>
+		</table>
+	</td>
+</tr>
+<tr>
+	<td></td>
+	<td>
+		 <button class="btn" (click)="onCancel()" id="cancelBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary"
+                     id="saveBtn">Deconfigure</button>
+	</td>
+</tr>
+</table>
+
+</div>
+</section>
+</form>
+ <div style="align-content:left;">
+ 	<div class="container"> 
+ 	<div class="row">
+ 		<div class="col-xs-3 col-sm-2 col-lg-1" style="background-color:#e0e0e0;border:0.1px solid #c2c2c2;" >Select</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#e0e0e0;border:0.1px solid #c2c2c2;">Cluster</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#e0e0e0;border:0.1px solid #c2c2c2;">Host</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#e0e0e0;border:0.1px solid #c2c2c2;">VM</div>
+ 	</div>
+ 	<div class="row" *ngFor="let entry of decnofigEntries" >
+ 		<div class="col-xs-3 col-sm-2 col-lg-1" style="background-color:#fff;">
+ 			<!-- <input #rb1 type="radio" name="rowNumber1" value="{{entry.rowNumber}}" (click)="rowSelected1($event)" checked [(ngModel)]="selectedRowNumber" />{{entry.rowNumber}} -->
+ 			<input #rb2 type="radio" name="rowNumber2" value="{{entry.rowNumber}}" (click)="rowSelected($event)" checked [(ngModel)]="selectedRowNumber" /><!--{{entry.rowNumber}} -->
+ 		</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#fff;">{{entry.vmCluster}}</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#fff;">{{entry.vmHost}}</div>
+ 		<div class="col-xs-6 col-sm-4 col-lg-2" style="background-color:#fff;">{{entry.vmName}}</div>
+ 	</div>
+ </div>
+ </div>
+ <br/>
+ <div align="center">
+ 	<button class="btn" (click)="updateFields()" id="refreshBtn">Update fields</button>
+	<button class="btn btn-primary" (click)="getDeconfigureEntries()" id="refreshBtn">Refresh Entries</button>
+</div>
+
+</div>

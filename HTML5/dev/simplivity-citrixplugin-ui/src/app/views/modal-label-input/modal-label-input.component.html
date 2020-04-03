@@ -1,0 +1,52 @@
+<!-- Copyright (c) 2018 VMware, Inc. All rights reserved. -->
+
+<div class="form-group" [ngStyle]="customStyle">
+    <label for="{{inputId}}" class="{{valueRequired? 'required' : ''}}">{{labelValue | translate}}</label>
+    <input *ngIf="!valueRequired"
+           id="{{inputId}}"
+           type="{{inputType}}"
+           size="{{inputSize}}"
+           placeholder="{{placeholderValue | translate}}"
+           [ngModel]="inputValue"
+           (ngModelChange)="onInputValueChanged($event)">
+
+    <label *ngIf="valueRequired"
+           for="{{inputId}}_with_tooltip"
+           [class.invalid]="invalidValue"
+           aria-haspopup="true" role="tooltip"
+           class="tooltip tooltip-validation tooltip-bottom-left tooltip-md">
+        <input type="{{InputType}}"
+               id="{{inputId}}_with_tooltip"
+               size="{{inputSize}}"
+               placeholder="{{placeholderValue | translate}}"
+               [ngModel]="inputValue"
+               (ngModelChange)="onInputValueChanged($event)" required>
+        <span class="tooltip-content">
+            {{invalidValueError}}
+        </span>
+    </label>
+    
+     <label for="{{inputId}}_password"  class="{{valueRequired? 'required' : ''}}">
+        <input *ngIf="!valueRequired" type="password"
+               id="{{inputId}}_password"
+               size="{{inputSize}}"
+               [ngModel]="inputValue"
+               (ngModelChange)="onInputValueChanged($event)" required>
+    </label>
+    
+   <!--  <label for="{{inputId}}_radio" class="{{valueRequired? 'required' : ''}}">
+    <input *ngIf="!valueRequired" type="radio"
+           id="{{inputId}}_radio"
+           name="{{inputName}}"
+           value="{{inputValue}}"
+           [ngModel]="inputValue"
+           (ngModelChange)="onInputValueChanged($event)">
+    </label> -->
+     
+    <label for="{{inputId}}_check" class="{{valueRequired? 'required' : ''}}">{{labelValue | translate}}
+    <input *ngIf="!valueRequired" type="checkbox"
+           id="{{inputId}}_check"
+           [ngModel]="inputValue"
+           (ngModelChange)="onInputValueChanged($event)">
+    </label>
+</div>

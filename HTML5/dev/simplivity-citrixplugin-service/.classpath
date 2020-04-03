@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" output="target/classes" path="src/main/java"/>
+	<classpathentry kind="src" output="target/classes" path="src/main/resources"/>
+	<classpathentry exported="true" kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/vsphere-client-lib.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/commons-logging-1.1.1.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/javax.servlet-api-3.0.1.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/spring-web-4.3.17.RELEASE.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/spring-beans-4.3.17.RELEASE.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/spring-context-4.3.17.RELEASE.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/gson-2.3.1.jar"/>
+	<classpathentry exported="true" kind="var" path="VSPHERE_CLIENT_SDK/libs/vim25.jar"/>
+	<classpathentry kind="var" path="VSPHERE_CLIENT_SDK/libs/guava-r05-1.0.0.jar"/>
+	<classpathentry kind="var" path="VSPHERE_CLIENT_SDK/libs/common-util-1.0.0.jar"/>
+	<classpathentry kind="var" path="VSPHERE_CLIENT_SDK/libs/log4j-1.2.7.jar"/>
+	<classpathentry kind="var" path="VSPHERE_CLIENT_SDK/libs/ganymed-ssh2-1.0.0.jar"/>
+	<classpathentry kind="var" path="VSPHERE_CLIENT_SDK/libs/jsch-0.1.55.jar"/>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
