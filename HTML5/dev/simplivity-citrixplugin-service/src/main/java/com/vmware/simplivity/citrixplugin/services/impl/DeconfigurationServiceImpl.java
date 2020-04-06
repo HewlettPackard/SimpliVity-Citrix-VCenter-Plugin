@@ -30,8 +30,9 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 
 	private Logger logger = Logger.getLogger(DeconfigureTableServiceImpl.class);
 	private BasicCfgFileUtil fileUtil;
-	private Message msg = new Message();
+	private Message msg =null;
 	private RemoteWindowsVMData remoteVmData;
+	private String RWD_ERROR = null;
 	
 	public DeconfigurationServiceImpl(){}
 	
@@ -43,6 +44,7 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 	public Message deconfigure(BaseInputData baseInputData) 
 	{
 		logger.info("Entering deconfiguration ..."+baseInputData);
+		msg = new Message();
 		if(baseInputData == null) 
 		{
 			msg.error = "Empty data";
@@ -82,6 +84,12 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 		
 		if(!prepareInputFile(baseInputData))
 		{
+			if(RWD_ERROR != null)
+			{
+				msg.error = RWD_ERROR;
+				logger.error(RWD_ERROR);
+				return msg;
+			}
 			msg.error = "Error in creating input file for Deconfigure";
 			logger.error(msg.error);
 			return msg;
@@ -96,9 +104,9 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 			
 		}*/
 		
-		/*
-		 * Copy the PsExec.exe to the temporary location
-		 */
+		
+		// Copy the PsExec.exe to the temporary location
+		 
 		String tempPsExecFile = fileUtil.getTempLocation()+"PsExec.exe";
 		if(fileUtil.isWindows())
 		{
@@ -113,7 +121,8 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 		if(fileUtil.isWindows())
 		{
 			PowershellExecutionUtil powershellUtil = new PowershellExecutionUtil();
-			result = powershellUtil.callPowerShellScript(baseInputData, scriptList);
+			result = powershellUtil.callPowerShellScript(baseInputData, scriptList, fileUtil.getHostname(),
+					fileUtil.getErrorMap());
 		}
 		else
 		{
@@ -123,8 +132,11 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 			    return msg;
 			}*/
 			RemotePowershellExecutionUtil powershellUtil = new RemotePowershellExecutionUtil();
-			result = powershellUtil.callPowerShellScript(baseInputData, scriptList, fileUtil.getHostname());
+			result = powershellUtil.callPowerShellScript(baseInputData, scriptList, fileUtil.getHostname(),
+					fileUtil.getErrorMap());
 		}
+		
+		logger.debug("RESULT: "+result);
 		if(result == null || result == "")
 		{
 			msg.error = "Error occured while deconfiguring. Please check the logs"+fileUtil.getLogFile()+" for more information.";
@@ -134,7 +146,7 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 		{
 			if(!deleteDeconfigureEntry(rowNumber, fileUtil.getDeconfigureEntryFilePath()))
 			{
-				msg.message = "Deconfiguration is successful but rrror occured while deleting the entry from the DeconfigureEntry file. Please check the logs for more information.";
+				msg.message = "Deconfiguration is successful but error occured while deleting the entry from the DeconfigureEntry file. Please check the logs for more information.";
 				logger.error(msg.message);
 			}
 			else
@@ -170,20 +182,32 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 		}
 		else
 		{
-			//fileUtil.deleteRemoteFile(remoteVmData.winUsername, remoteVmData.winIP, remoteVmData.winPassword, "./PsExec.exe");
-			/*for(int i = 0; i< scriptList.size(); i++)
-			{
-				fileUtil.deleteRemoteFile(remoteVmData.winUsername, remoteVmData.winIP, remoteVmData.winPassword, scriptList.get(i).scriptName);
-			}*/
 			for(String file: baseInputData.getInputFileList())
 			{
-				fileUtil.deleteRemoteFile(remoteVmData.getWinUsername()	, remoteVmData.getWinIP(), remoteVmData.getWinPassword(), file);
+				if(!fileUtil.deleteRemoteFile(remoteVmData.getWinUsername()	, remoteVmData.getWinIP(), remoteVmData.getWinPassword(), file))
+				{
+					logger.error("\nUnable to establish a session with remote Windows VM while deleting the input file. \n Please restart the remote Windows VM and make sure the OpenSSH server is up and running.");
+					if(msg != null)
+					{
+						if(msg.message != null)
+						{
+							msg.message += "\nWARN:Unable to establish a session with remote Windows VM while deleting the input file. \n Please restart the remote Windows VM and make sure the OpenSSH server is up and running.";
+						}
+						else if(msg.error != null)
+						{
+							msg.error += "\nWARN: Unable to establish a session with remote Windows VM while deleting the input file. \n Please restart the remote Windows VM and make sure the OpenSSH server is up and running.";
+						}
+					}
+				}
 			}
 		}
 		//fileUtil.setOVCData(null);
+
+		//deleteDeconfigureEntry(rowNumber, fileUtil.getDeconfigureEntryFilePath());
 		return msg;
 	}
 	
+	@SuppressWarnings("unused")
 	private boolean prepareDeconfigureScriptList(List<ScriptInfo> deconfigureScriptList) 
 	{
 		logger.debug("Entered prepareDeconfigureScriptList method:"+ deconfigureScriptList);
@@ -256,7 +280,12 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 				logger.debug("Writing inputFiles to remote windows machine");
 				inputFilename = "./"+baseInputData.getVmData().get(ix).getVmName()+ ".psd1";
 				RemoteWindowsVMData winData = baseInputData.getOvcData().getRemoteWindowsVMData();
-				fileUtil.writeRemoteFile(winData.getWinUsername(), winData.getWinIP(), winData.getWinPassword(), inputFilename, sFileLine);
+				if(!fileUtil.writeRemoteFile(winData.getWinUsername(), winData.getWinIP(), winData.getWinPassword(), inputFilename, sFileLine))
+				{
+					logger.error("Error occured while writing input file to remotw windows VM. Please restart the remote Windows VM and try again.");
+					RWD_ERROR = "Error occured while writing input file to remotw windows VM. Please restart the remote Windows VM and try again.";
+					return false;
+				}
 			}
             filenameList.add(inputFilename);
         } // Loop
@@ -285,12 +314,12 @@ public class DeconfigurationServiceImpl implements DeconfigurationService
 			return false;
 		}
 		
-		if(!fileUtil.isWindows())
+		/*if(!fileUtil.isWindows())
 		{
 			logger.debug("Non Windows System");
 			return deleteDeconfigureEntryRemotely(rowNumber, filePath);
 		}
-		
+		*/
 		FileWriter fw = null;
 		String line = null;
 		String newContent = "";

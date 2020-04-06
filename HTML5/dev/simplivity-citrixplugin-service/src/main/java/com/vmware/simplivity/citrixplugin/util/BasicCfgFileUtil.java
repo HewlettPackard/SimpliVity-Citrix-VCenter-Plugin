@@ -54,6 +54,8 @@ public class BasicCfgFileUtil
     private Map <String, String> cfgEntryMap 
                                 = new HashMap<String, String>();
     
+    Map<String,String> ERROR_MAP = null;
+    
     private Map<String,List<String>> clusterMap;// = new HashMap<String, List<String>>();
     
     public String hpModel= null;
@@ -82,8 +84,7 @@ public class BasicCfgFileUtil
   	  			logger.error("Error getting localhost IP", e);
   	  		}
   		}
-  		System.out.println("HOSTNAME:"+hostname);
-  		
+  		initiateErroMap();  		
   		logger.debug("HOSTNAME:"+hostname);
   		setHostname(hostname);
     }
@@ -143,34 +144,34 @@ public class BasicCfgFileUtil
     		if(isWindows())
     		{
     			configureScriptList = new ArrayList<ScriptInfo>(5);
-            	configureScriptList.add(0,new ScriptInfo(getCitrixPluginDataFolder("CloningOfVM.ps1"), "CloningVMTask"));
-            	configureScriptList.add(1,new ScriptInfo(getCitrixPluginDataFolder("ComputerNameChange.ps1"), "ComputerNameChangeTask"));
-            	configureScriptList.add(2,new ScriptInfo(getCitrixPluginDataFolder("AddDomain.ps1"), "DomainChangeVMTask"));
-            	configureScriptList.add(3, new ScriptInfo(getCitrixPluginDataFolder("ResourceLocation.ps1"), "ResourceLocationTask"));
-            	configureScriptList.add(4,new ScriptInfo(getCitrixPluginDataFolder("InstallCWConnector.ps1"), "DownloadCWCConnectorTask"));
+            	configureScriptList.add(0,new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/CloningOfVM.ps1", "CloningVMTask"));
+            	configureScriptList.add(1,new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/ComputerNameChange.ps1", "ComputerNameChangeTask"));
+            	configureScriptList.add(2,new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/AddDomain.ps1", "DomainChangeVMTask"));
+            	configureScriptList.add(3, new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/ResourceLocation.ps1", "ResourceLocationTask"));
+            	configureScriptList.add(4,new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/InstallCWConnector.ps1", "DownloadCWCConnectorTask"));
             	
             	deconfigureScriptList = new ArrayList<ScriptInfo>(2);
             	/*deconfigureScriptList.add(0, new ScriptInfo(getCitrixPluginDataFolder("UninstallCWConnector.ps1"), "UnistallCWConnectorTask1"));
             	deconfigureScriptList.add(1,new ScriptInfo(getCitrixPluginDataFolder("UnregisterFromDomain.ps1"), "UnregisterFromDomainTask1"));*/
             	//For Temp pupose changing order
-            	deconfigureScriptList.add(0, new ScriptInfo(getCitrixPluginDataFolder("UninstallCWConnector.ps1"), "UnistallCWConnectorTask"));
-            	deconfigureScriptList.add(1,new ScriptInfo(getCitrixPluginDataFolder("UnregisterFromDomain.ps1"), "UnregisterFromDomainTask"));
+            	deconfigureScriptList.add(0, new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/UninstallCWConnector.ps1", "UnistallCWConnectorTask"));
+            	deconfigureScriptList.add(1,new ScriptInfo("C:/Users/Public/SimpliVityCitrixScripts/UnregisterFromDomain.ps1", "UnregisterFromDomainTask"));
     		}
     		else
     		{
     			configureScriptList = new ArrayList<ScriptInfo>(5);
-            	configureScriptList.add(0,new ScriptInfo("C:/SimplivityCitrixScripts/CloningOfVM.ps1", "CloningVMTask"));
-            	configureScriptList.add(1,new ScriptInfo("C:/SimplivityCitrixScripts/ComputerNameChange.ps1", "ComputerNameChangeTask"));
-            	configureScriptList.add(2,new ScriptInfo("C:/SimplivityCitrixScripts/AddDomain.ps1", "DomainChangeVMTask"));
-            	configureScriptList.add(3, new ScriptInfo("C:/SimplivityCitrixScripts/ResourceLocation.ps1", "ResourceLocationTask"));
-            	configureScriptList.add(4,new ScriptInfo("C:/SimplivityCitrixScripts/InstallCWConnector.ps1", "DownloadCWCConnectorTask"));
+            	configureScriptList.add(0,new ScriptInfo("C:/SimpliVityCitrixScripts/CloningOfVM.ps1", "CloningVMTask"));
+            	configureScriptList.add(1,new ScriptInfo("C:/SimpliVityCitrixScripts/ComputerNameChange.ps1", "ComputerNameChangeTask"));
+            	configureScriptList.add(2,new ScriptInfo("C:/SimpliVityCitrixScripts/AddDomain.ps1", "DomainChangeVMTask"));
+            	configureScriptList.add(3, new ScriptInfo("C:/SimpliVityCitrixScripts/ResourceLocation.ps1", "ResourceLocationTask"));
+            	configureScriptList.add(4,new ScriptInfo("C:/SimpliVityCitrixScripts/InstallCWConnector.ps1", "DownloadCWCConnectorTask"));
             	
             	deconfigureScriptList = new ArrayList<ScriptInfo>(2);
             	/*deconfigureScriptList.add(0, new ScriptInfo(getCitrixPluginDataFolder("UninstallCWConnector.ps1"), "UnistallCWConnectorTask1"));
             	deconfigureScriptList.add(1,new ScriptInfo(getCitrixPluginDataFolder("UnregisterFromDomain.ps1"), "UnregisterFromDomainTask1"));*/
             	//For Temp pupose changing order
-            	deconfigureScriptList.add(0, new ScriptInfo("C:/SimplivityCitrixScripts/UninstallCWConnector.ps1", "UnistallCWConnectorTask"));
-            	deconfigureScriptList.add(1,new ScriptInfo("C:/SimplivityCitrixScripts/UnregisterFromDomain.ps1", "UnregisterFromDomainTask"));
+            	deconfigureScriptList.add(0, new ScriptInfo("C:/SimpliVityCitrixScripts/UninstallCWConnector.ps1", "UnistallCWConnectorTask"));
+            	deconfigureScriptList.add(1,new ScriptInfo("C:/SimpliVityCitrixScripts/UnregisterFromDomain.ps1", "UnregisterFromDomainTask"));
     		}
     	}
     	catch(Exception e)
@@ -274,15 +275,7 @@ public class BasicCfgFileUtil
 		return ovcData;
 	}
 	
-	public String getConfigScrPath() 
-	{ 
-       return getCitrixPluginDataFolder("configure.ps1");
-    }
 	
-	public String getDeConfigScrPath() 
-	{ 
-		return getCitrixPluginDataFolder("deconfigure.ps1");
-    }
 	
 	public String writeToFile( String sFileName, String sContent, String sSourceInfo )
 	{
@@ -334,7 +327,7 @@ public class BasicCfgFileUtil
 		return false;
 	}
 
-	public String getCitrixPluginDataFolder(String file) 
+	/*public String getCitrixPluginDataFolder(String file) 
    {
 	   String dataFolder = null;
 	    
@@ -352,9 +345,9 @@ public class BasicCfgFileUtil
 		   if(res != null)
 		   {
 			   logger.debug("URL::"+res.toURI());
-			   /*File ff = Paths.get(res.toURI()).toFile();
+			   File ff = Paths.get(res.toURI()).toFile();
 			   String absolutePath = ff.getAbsolutePath();
-	           logger.debug("PATH2: "+absolutePath);*/
+	           logger.debug("PATH2: "+absolutePath);
 		   }
 		  
 		   File fff = new File("resources/abc.txt");
@@ -371,7 +364,7 @@ public class BasicCfgFileUtil
 		   e.printStackTrace();
 	   }
 	      return dataFolder;
-   }
+   }*/
    
 	public String getDeconfigureEntryFilePath()
 	{
@@ -382,7 +375,8 @@ public class BasicCfgFileUtil
 		}
 		else
 		{
-			return "./deconfigureEntry.csv";
+			//return "./deconfigureEntry.csv";
+			return "/var/log/vmware/vsphere-ui/logs/deconfigureEntry.csv";
 		}
 		
 	}
@@ -412,7 +406,7 @@ public class BasicCfgFileUtil
 	{
 		if(isWindows())
 		{
-			return getCitrixPluginDataFolder("ClusterScript.ps1");
+			return "C:/Users/Public/SimpliVityCitrixScripts/ClusterScript.ps1";
 		}
 		return "C:/SimplivityCitrixScripts/ClusterScript.ps1";
 	}
@@ -421,7 +415,7 @@ public class BasicCfgFileUtil
 	{
 		if(isWindows())
 		{
-			return getCitrixPluginDataFolder("NonSimplivityScript.ps1");
+			return "C:/Users/Public/SimpliVityCitrixScripts/NonSimplivityScript.ps1";
 		}
 		return "C:/SimplivityCitrixScripts/NonSimplivityScript.ps1";
 	}
@@ -438,7 +432,7 @@ public class BasicCfgFileUtil
 	
 	public String getPsexecPath()
 	{
-		return getCitrixPluginDataFolder("PsExec.exe");
+		return "C:/Users/Public/SimpliVityCitrixScripts/PsExec.exe";
 	}
 	
 	public String getTempLocation()
@@ -462,6 +456,80 @@ public class BasicCfgFileUtil
 		{
 			return "/var/log/vmware/vsphere-ui/logs/citrixPlugincfg.cfg";
 		}
+	}
+	public Map<String, String> getErrorMap()
+	{
+		return ERROR_MAP;
+	}
+	private void initiateErroMap()
+	{
+		ERROR_MAP = new HashMap<String,String>();
+		ERROR_MAP.put("SERVER_CONNECTION_ERROR", "Couldn't resolve the server name/OVC IP address.  Please provide the correct details in OVC/ILO page.");
+		ERROR_MAP.put("INVALID_LOGIN", "Unable to connec to vCenter Server. Invalid credentials provided. Please provide the correct details.");
+		ERROR_MAP.put("UNABLE_TO_CONNECT_SERVER", "Unable to connec to vCenter Server. Please provide the correct details in OVC/ILO page.");
+		ERROR_MAP.put("INVALID_OVC_IP", "Cannot resolve the OVC IP address. Please provide a valid OVC IP Address.");
+		/*  CLONING OF VM SCRIPT*/
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_FOR_CLONING", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("NO_TEMPLATE_FOUND", "Failed to get the template for VM_NAME.");
+		ERROR_MAP.put("ACCESS_TOKEN_CREATION_FAILED", "SimpliVity Access Token creation failed for VM_NAME, please make sure that you provide correct credentials of OVC.");
+		ERROR_MAP.put("NO_TEMPLATE_FOUND_FROM_API", "Failed to get the template for VM_NAME using SimpliVity API. Make sure that the VM template provided is proper.");
+		ERROR_MAP.put("SIMPLIVITY_CLONE_FAILED", "VM creation using SimpliVity API failed for VM_NAME.");
+		ERROR_MAP.put("VM_CREATION_FAILED", "Creation of VM VM_Name failed.");
+		ERROR_MAP.put("UNABLE_TO_PING_IP", "Unable to ping the IP Address of VM_NAME.");
+		ERROR_MAP.put("EXCEPTION_PING_IP", "Exception occured while pinging IP Address of VM_NAME.");
+		ERROR_MAP.put("VM_DIDNT_COMEUP", "VM VM_NAME didnt come up after assigning static IP Address. Please make sure that the static IP given is free and other details are correct.");
+		ERROR_MAP.put("STATIC_IP_ASSGIGNMENT_FAILED", "Static IP assignment failed for VM_NAME. Please make sure that the static IP given is free.");
+		ERROR_MAP.put("IPV6_ASSIGNMENT", "IPV6 address is assigned for the VM VM_NAME instead of IPV4 Address.");
+		
+		/* COMPUTER NAME CHANGE SCRIPT */
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_FOR_CHANGING_COMPUTER_NAME", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("COMPUTER_NAME_CHANGE_FAILED", "Changing the computer name for VM_NAME failed.");
+		
+		/* ADD DOMAIN SCRIPT */
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_ADD_DOMAIN", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("GOT_IPV6_ADDRESS", "Got IPv6 address instead of IPv4 address for VM VM_NAME.");
+		ERROR_MAP.put("UNABLE_TO_PING_VM", "Unable to ping the VM using IP Address.");
+		ERROR_MAP.put("EXCEPTION_PING_IP", "Exception occured while pinging IP Address of VM_NAME.");
+		ERROR_MAP.put("VM_DIDNT_COME_UP_POST_DOMAIN_ADDITION", "VM VM_NAME didnt come up after adding VM to domain.");
+		ERROR_MAP.put("VM_NOT_ADDED_TO_DOMAIN", "VM VM_NAME didn't get added to domain.");
+		
+		/* RESOURCE LOCATION SCRIPT */
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_RESOURCE_LOCATION", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("RESOURCE_LOCATION_TAG_FAILED", "Updating the resource location to resource location tag creation failed for VM_NAME.");
+		ERROR_MAP.put("RESOURCE_LOCATION_CREATION_FAILED", "Resource location creation failed for VM VM_NAME.");
+		
+		/* INSTALLATION OF CWC CONNECTOR SCRIPT*/
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_INSTALL_CWC", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("CWC_INSTALLATION_FAILED", "Citric CWC Connector failed for VM VM_NAME.");
+		
+		/* UNNISTALL CWC Connector */
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_UNINSTALL_CWC", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("FAILED_TO_GET_VM", "Failed to getVM VM_NAME.");
+		ERROR_MAP.put("GOT_IPV6_ADDRESS", "Got IPv6 address instead of IPv4 address for VM VM_NAME.");
+		ERROR_MAP.put("UNINSTALL_FAILED", "CWCConnector didn't get uninstalled frm VM VM_NAME.");
+		
+		/* UNREGISTER FROM DOMAIN */
+		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_REMOVE_DOMAIN", "Few or all the required parameters are missing for VM_NAME.");
+		ERROR_MAP.put("UNABLE_TO_POWER_OFF_VM", "Unable to poweroff the VM VM_NAME.");
+		ERROR_MAP.put("GOT_IPV6_ADDRESS", "Got IPv6 address instead of IPv4 address for VM VM_NAME.");
+		ERROR_MAP.put("VM_DIDNT_COME_UP_POST_UNREGISTERING_FROM_DOMAIN", "VM VM_NAME didnt come up after unregistering VM from domain.");
+		ERROR_MAP.put("UNABLE_TO_UNREGISTER_FROM_DOMAIN", "VM VM_NAME didnt get unjoined from domain.");
+	}
+
+	public String getErrorDescription(String error)
+	{
+		if(error != null)
+		{
+			for(Map.Entry<String,String> entry: ERROR_MAP.entrySet())
+			{
+				if( error.contains(entry.getKey()))
+				{
+					System.out.println("VALUE:"+entry.getValue());
+					return entry.getValue(); 
+				}
+			}
+		}
+		return null;
 	}
 	public boolean  copyFileUsingFileChannels(String source, String dest)
 	{
@@ -530,7 +598,7 @@ public class BasicCfgFileUtil
 		logger.debug( msg);
 	}
 
-	public void deleteRemoteFile(String username, String host, String password, String remotefile){
+	public boolean deleteRemoteFile(String username, String host, String password, String remotefile){
 		logger.debug("Enetered into deleteRemoteFile method: "+remotefile);
 	    JSch jsch = new JSch();
 	    Session session = null;
@@ -553,73 +621,99 @@ public class BasicCfgFileUtil
 	          System.out.println("Disconnected from "+host);
 	     } catch (JSchException j) {
 	    	 logger.error("Exp while deleting file..",j);
-	          j.printStackTrace();  
+	          j.printStackTrace();
+	          return false;
 	     } catch (SftpException s) {
 	    	 logger.error("Exp while deleting file..",s);
 	          s.printStackTrace();
+	          return false;
 	     }
 	    catch(Exception e)
 	    {
 	    	logger.error("Exp while deleting file..",e);
 	    	e.printStackTrace();
+	    	return false;
 	    }
+	    return true;
 	}
 
-	public void writeRemoteFile(String username, String host, String password, String remotefile, String content){
+	public boolean writeRemoteFile(String username, String host, String password, String remotefile, String content){
 	    logger.debug("Entered into writeRemoteFile method: "+remotefile);
+	    boolean flag = false;
 		JSch jsch = new JSch();
 	    Session session = null;
+	    ByteArrayInputStream bais = null;
 	    try {
-	    	System.out.println("Starting new Session..");
+	    	logger.debug("Starting new Session..");
 	          session = jsch.getSession(username, host, 22);
 	          session.setConfig("StrictHostKeyChecking", "no");
 	          session.setPassword(password);
 	          session.connect();
 
-	          System.out.println("Connected to "+host);
+	          logger.debug("Connected to "+host);
 	          Channel channel = session.openChannel("sftp");
 	          channel.connect();
 	          System.out.println("Connected to SFTP");
 	          ChannelSftp sftpChannel = (ChannelSftp) channel;
-	          sftpChannel.put(new ByteArrayInputStream(content.getBytes()), remotefile);
-	          System.out.println("Writing to "+host+" file");
+	          bais = new ByteArrayInputStream(content.getBytes());
+	          sftpChannel.put(bais, remotefile);
+	          logger.debug("Writing to "+host+" file");
+	          bais.close();
 	          sftpChannel.exit();
 	          session.disconnect();
-	          System.out.println("Disconnected from "+host);
+	          logger.debug("Disconnected from "+host);
 	     } catch (JSchException j) {
-	    	 logger.error("Error while deleting file remotely ", j);
-	          j.printStackTrace();  
+	    	 logger.error("Error while writing file "+remotefile+" remotely ", j);
+	          j.printStackTrace(); 
+	          return false;
 	     } catch (SftpException s) {
-	    	 logger.error("Error while deleting file remotely ", s);
+	    	 logger.error("Error while writing file "+remotefile+" remotely ", s);
 	          s.printStackTrace();
+	          return false;
 	     }
 	    catch(Exception e)
 	    {
-	    	logger.error("Error while writing file remotely ", e);
+	    	logger.error("Error while writing file "+remotefile+" remotely ", e);
 	    	e.printStackTrace();
+	    	return false;
 	    }
+	    finally
+	    {
+	    	try
+	    	{
+	    		if(bais != null)
+	    			bais.close();
+	    	}
+	    	catch(Exception e)
+	    	{
+	    		logger.error("Error while closing the file "+remotefile+" while writing", e);
+	    	}
+	    }
+	    return true;
 	}
 	
 	public void appendRemoteFile(String username, String host, String password, String remotefile, String content){
 	    JSch jsch = new JSch();
 	    Session session = null;
+	    ByteArrayInputStream byteArrayInputStream = null;
 	    try {
-	    	System.out.println("Starting new Session..");
+	    	logger.debug("Starting new Session..");
 	          session = jsch.getSession(username, host, 22);
 	          session.setConfig("StrictHostKeyChecking", "no");
 	          session.setPassword(password);
 	          session.connect();
 
-	          System.out.println("Connected to "+host);
+	          logger.debug("Connected to "+host);
 	          Channel channel = session.openChannel("sftp");
 	          channel.connect();
-	          System.out.println("Connected to SFTP");
+	          logger.debug("Connected to SFTP");
 	          ChannelSftp sftpChannel = (ChannelSftp) channel;
-	          sftpChannel.put(new ByteArrayInputStream(content.getBytes()), remotefile, ChannelSftp.APPEND);
+	          byteArrayInputStream = new ByteArrayInputStream(content.getBytes());
+	          sftpChannel.put(byteArrayInputStream, remotefile, ChannelSftp.APPEND);
 	          System.out.println("Writing to "+host+" file");
 	          sftpChannel.exit();
 	          session.disconnect();
-	          System.out.println("Disconnected from "+host);
+	          logger.debug("Disconnected from "+host);
 	     } catch (JSchException j) {
 	    	 logger.error("Exp while appending file..",j);
 	          j.printStackTrace();  
@@ -631,6 +725,18 @@ public class BasicCfgFileUtil
 	    {
 	    	logger.error("Exp while appending file..",e);
 	    	e.printStackTrace();
+	    }
+	    finally
+	    {
+	    	try
+	    	{
+	    		if(byteArrayInputStream != null)
+	    			byteArrayInputStream.close();
+	    	}
+	    	catch(Exception e)
+	    	{
+	    		logger.error("Error while closing the file "+remotefile+" while appending", e);
+	    	}
 	    }
 	}
 	
@@ -718,28 +824,6 @@ public class BasicCfgFileUtil
 
 	public String getHostname() {
 		System.out.println("HOSTNAME: "+hostname);
-		/*if(hostname == null)
-		{
-	  		if(isWindows())
-	  		{
-	  			try {
-	  	  			hostname = InetAddress.getLocalHost().getHostAddress();
-	  	  		} catch (UnknownHostException e) {
-	  	  			e.printStackTrace();
-	  	  			logger.error("Error getting localhost IP", e);
-	  	  		}
-	  		}
-	  		else
-	  		{
-	  			try {
-	  	  			hostname = InetAddress.getLocalHost().getHostName();
-	  	  		} catch (UnknownHostException e) {
-	  	  			e.printStackTrace();
-	  	  			logger.error("Error getting localhost IP", e);
-	  	  		}
-	  		}
-		}
-		System.out.println("HOSTNAME1: "+hostname);*/
 		return hostname;
 	}
 

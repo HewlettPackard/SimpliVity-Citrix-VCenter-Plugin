@@ -9,7 +9,7 @@
 	) 
 	$hostname = $(hostname)
 
-
+Write-Host "================ $vmName CWCCONNECTOR INSTALLATION SCRIPT START==============="
 	#*******************************************************#
 	#  MethodName : cleanUp              					#
 	#  Input      : VM object            					#
@@ -72,6 +72,11 @@
 		$vmUsername = $input.vm.username
 		$vmPassword = $input.vm.password
 		
+		# Read Active Directory
+		$adDomain = $input.ad.domain
+		$adUsername  = $input.ad.username
+		$adPassword = $input.ad.password
+		
 		# Citrix details
 		$citrixCustomer = $input.citrix.customerName
 		$citrixClientId = $input.citrix.clientId
@@ -98,6 +103,7 @@
 
 	if (-Not ($vmName -And $vcenterHostname -And $citrixCustomer -And $citrixClientId -And $citrixClientKey -And $citrixResourceLocation -And $ovcUsername -And $ovcPassword) ) {
 		#"ERRLOG| Few or all the required parameters are missing" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_INSTALL_CWC"
 		Write-Error "Few or all the required parameters are missing"
 		exit 1
 	}
@@ -106,9 +112,21 @@
 	#"APPLOG| Input parameters successfully read for VM $vmName in InstallCWCConnector Script" | WriteFile
 	
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-    Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+   # Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
     #Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
-	Write-Host "================ $vmName CWCCONNECTOR INSTALLATION SCRIPT START==============="
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	
 	$vm = Get-VM -Name $vmName
 	
@@ -145,74 +163,58 @@
 		 }
 	}
 	
-	Write-Output "----Step 2:: Installing CWCConnector and adding VM $vmName to the resource location------"
-	##"APPLOG| ----Step 2:: Installing CWCConnector and adding VM $vmName to the resource location------" | WriteFile
-	$params = "/q /CustomerName:$citrixCustomer /ClientId:$citrixClientId /ClientSecret:$citrixClientKey /Location:$resourceId /AcceptTermsOfService:true"
-	$downloadsUri = 'https://downloads.cloud.com/'+$citrixCustomer+'/connector/cwcconnector.exe'
-	#Write-Host "DownloadsURI: '$downloadsUri'"
-	Write-Host "$vmName PARAMS: "$params
-	$installscript = @"
-	Set-ExecutionPolicy Unrestricted -Force
-	Remove-Item -Force c:\cwcconnector.exe -ErrorAction SilentlyContinue
-	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-	Invoke-WebRequest -Uri '$downloadsUri' -OutFile "C:\cwcconnector.exe"
-"@
-
-	##"APPLOG| Starting Citrix Cloud installation on '$vmName'" | WriteFile
-	Write-Host "Starting downloading Citrix Cloud installer on '$vmName'"
 	$vmPassword = ConvertTo-SecureString $vmPassword -AsPlainText -Force
 	$localCreds = New-Object PSCredential($vmUsername, $vmPassword)
-	Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds -WarningAction Ignore
-
-	Write-Host "$vmName PARAMS:"$params
+	$downloadsUri = 'https://downloads.cloud.com/'+$citrixCustomer+'/connector/cwcconnector.exe'
+	$params = "/q /CustomerName:$citrixCustomer /ClientId:$citrixClientId /ClientSecret:$citrixClientKey /Location:$resourceId /AcceptTermsOfService:true"
+	
+	Write-Host "$vmName : Downloading cloud connector on $vmName in the path c:\cwcconnector.exe!!"
 	$installscript = @"
-	Set-ExecutionPolicy Unrestricted -Force
+	Remove-Item -Force c:\cwcconnector.exe -ErrorAction SilentlyContinue
 	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-	Start-Process c:\cwcconnector.exe '$params' -Wait
+	Invoke-WebRequest -Uri '$downloadsUri' -OutFile "C:\Users\Public\cwcconnector.exe"
 "@
-	start-sleep $sleep_time
-	Write-Host "Starting Citrix Cloud installation on '$vmName'"
-	Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds -WarningAction Ignore
-	Write-Host "Checking whether the CWConnector is installed on '$vmName' or not"
-	#"APPLOG| Checking whether the CWConnector is installed on '$vmName' or not" | WriteFile
-	
-	start-sleep 30
-	$cmd = "Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |Select-Object DisplayName"
-	$cwcInstallConfirm = Invoke-vmScript -vm $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
-	Write-Host "cwcInstallConfirm: "$cwcInstallConfirm.ScriptOutput
-	if(! ($cwcInstallConfirm.ScriptOutput -Match "Citrix Cloud Services Connectivity Test Tool"))
+
+	$installOutpt = Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds
+	if($installOutpt -ne $null)
 	{
-		#"ERRLOG| CWCConnector didnt get installed in VM $vmName.  So, deleteing the VM $vmName create" | WriteFile
-		Write-Host "CWCConnector didnt get installed in VM $vmName.  So, trying to install agian on $vmName"
-		#cleanUp $vm
-		
-			$installscript = @"
-		Set-ExecutionPolicy Unrestricted -Force
-		[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-		Start-Process c:\cwcconnector.exe '$params' -Wait
+		Write-Host "CWCConnctor installed successfully for $vmName"
+	}
+	else
+	{
+		Write-Error "CWC_INSTALLER_DOWNLOAD_FAILED"
+		Write-Error "Error occured during download of cwcconnector.exe for $vmName"
+	}
+
+	Start-sleep 30
+	Write-Host "$vmName : Starting Cloud connector installation with parameters $params –Wait"
+	$installscript = @"
+	[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+	Start-Process c:\Users\Public\cwcconnector.exe '$params' -NoNewWindow -Wait
 "@
-		start-sleep 30
-		Write-Host "Starting Citrix Cloud installation again on '$vmName'"
-		Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds -WarningAction Ignore
-		
-		Write-Host "Checking whether the CWConnector is installed on '$vmName' or not"
-		start-sleep 30
-		$cmd = "Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |Select-Object DisplayName"
-		$cwcInstallConfirm = Invoke-vmScript -vm $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
-		Write-Host "cwcInstallConfirm2: "$cwcInstallConfirm.ScriptOutput
-		if(! ($cwcInstallConfirm.ScriptOutput -Match "Citrix Cloud Services Connectivity Test Tool"))
-		{
-			#"ERRLOG| CWCConnector didnt get installed in VM $vmName.  So, deleteing the VM $vmName create" | WriteFile
-			Write-Error "CWCConnector didnt get installed in VM $vmName.  So, deleteing the VM $vmName create"
-			#cleanUp $vm
-		}
 	
+	$installOutpt = Invoke-VMScript -VM $vm -ScriptText $installscript -GuestCredential $localCreds
+	
+	if ($installOutpt -ne $null) {
+        
+         Write-Host "$vmName : Citrix Cloud connector installation completed!!"
+	} else {
+        
+		Write-Error "CWC_INSTALLATION_FAILED"
+        Write-Error "$vmName : Failed to install Citrix Cloud connector!!"
+		cleanUp $vm
+        exit 1
 	}
 	
-	
 	$vm = Get-vm -Name $vmName
+	Write-Host "Checking the host of the VM "$vmName
+	$hostName = $vm.VMHost.name
+	Write-Host "Host of the VM created "$hostName
+	Write-Host "Expected host: "$vmHost
 	
-	if($vm.VMHost.name -ne $vmHost)
+	$hostName2 = Get-VMHost -VM $vm
+	Write-Host "One more way to get host name: "$hostName2.Name
+	if($hostName -ne $vmHost)
 	{
 		write-Host "Migrate the Virtual machine "$vmName" to "$vmHost
 		#"APPLOG| Migrate the Virtual machine "+$vmName+" to "+$vmHost  | WriteFile

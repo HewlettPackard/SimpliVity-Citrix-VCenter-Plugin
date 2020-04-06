@@ -8,7 +8,7 @@
 		$logFile
 	) 
 	$hostname = $(hostname)
-
+Write-Host "================ $vmName RESOURCE LOCATION SCRIPT START==============="
 
 	#*******************************************************#
 	#  MethodName : cleanUp              					#
@@ -104,6 +104,7 @@
 
 	if (-Not ($vmName -And $vcenterHostname -And $citrixCustomer -And $citrixClientId -And $citrixClientKey -And $citrixResourceLocation -And $ovcUsername -And $ovcPassword) ) {
 		#"ERRLOG| Few or all the required parameters are missing" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_RESOURCE_LOCATION"
 		Write-Error "Few or all the required parameters are missing"
 		exit 1
 	}
@@ -113,9 +114,21 @@
 	#Write-Host "MODEL NAME READ for $vmName : $modelName"
 	
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-    Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+    #Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
     #Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
-	Write-Host "================ $vmName RESOURCE LOCATION SCRIPT START==============="
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	
 	$vm = Get-VM $vmName
 	Write-Host "Creating the security token using Citrix Credentials"
@@ -168,7 +181,7 @@
 		 }
 	}
 	if( $resourceId) {
-		Write-Host "Checking the tag of resource location"
+		Write-Host "Checking the tag of resource location for VM $vmName"
 		##"APPLOG| Checking the tag of resource location" | WriteFile
 		$tagCheck = $false
 		$uri = "https://registry.citrixworkspacesapi.net/"+$citrixCustomer+"/tags/tag/"+$tag+"?Token=&Take=100"
@@ -202,16 +215,18 @@
 					#"APPLOG| $vmName : Updated tag $tag for resource location $resourceLocation" | WriteFile
 				}
 				else {
-					Write-Error "$vmName : Failed to pdate tag $tag for resource location $resourceLocation"
+					Write-Error "RESOURCE_LOCATION_TAG_FAILED"
+					Write-Error "$vmName : Failed to update tag $tag for resource location $resourceLocation"
 					#"ERRLOG| $vmName : Failed to updated tag $tag for resource location $resourceLocation" | WriteFile
-					#cleanUp $vm
+					cleanUp $vm
 					exit 1
 				}
 			}
 			catch {
 					#"ERRLOG| Failed to update the tag $tag for resource location $resourceLocation : $_.ExceptionItemName. $_.Exception.Message" | WriteFile
+					Write-Error "RESOURCE_LOCATION_TAG_FAILED"
 					Write-Error "Failed to update the tag $tag for resource location $resourceLocation : $_.ExceptionItemName. $_.Exception.Message"
-					#cleanUp $vm
+					cleanUp $vm
 					exit 1
 			}
 		}
@@ -244,13 +259,15 @@
 				##"APPLOG| $vmName : Updated tag $tag for resource location $resourceLocation" | WriteFile
 			}
 			else {
-				Write-Error "$vmName : Failed to pdate tag $tag for resource location $resourceLocation"
+				Write-Error "RESOURCE_LOCATION_TAG_FAILED"
+				Write-Error "$vmName : Failed to update tag $tag for resource location $resourceLocation"
 				#"ERRLOG| $vmName : Failed to updated tag $tag for resource location $resourceLocation" | WriteFile
 				cleanUp $vm
 				exit 1
 			}
 		}
 		catch {
+				Write-Error "RESOURCE_LOCATION_TAG_FAILED"
 				#"ERRLOG| Failed to update the tag $tag for resource location $resourceLocation : $_.ExceptionItemName. $_.Exception.Message" | WriteFile
 				Write-Error "Failed to update the tag $tag for resource location $resourceLocation : $_.ExceptionItemName. $_.Exception.Message"
 				cleanUp $vm
@@ -262,6 +279,7 @@
 	# Check whether thr resource location is created or not
 	if( -Not $resourceId)
 	{
+		Write-Error "RESOURCE_LOCATION_CREATION_FAILED"
 		#"ERRLOG| Unable to create a Resource Location '$citrixResourceLocation'" | WriteFile
 		Write-Host " Unable to create a Resource Location '$citrixResourceLocation'"
 		cleanUp $vm

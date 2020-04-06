@@ -9,7 +9,7 @@
 	) 
 	$hostname = $(hostname)
 
-
+Write-Host "================ $vmName COMPUTER NAME CHANGE SCRIPT START==============="
 	#*******************************************************#
 	#  MethodName : cleanUp              					#
 	#  Input      : VM object            					#
@@ -91,6 +91,7 @@
 
 	if (-Not ($vmName -And $vcenterHostname -And $ovcUsername -And $ovcPassword) ) {
 		#"ERRLOG| Few or all the required parameters are missing" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_FOR_CHANGING_COMPUTER_NAME"
 		Write-Error "Few or all the required parameters are missing"
 		exit 1
 	}
@@ -99,10 +100,22 @@
 	#"APPLOG| Input parameters successfully read for Computer name change of VM $vmName" | WriteFile
 	
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-    Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+   # Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
     #Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
 	
-	Write-Host "================ $vmName COMPUTER NAME CHANGE SCRIPT START==============="
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	
 	$vmPassword = ConvertTo-SecureString $vmPassword -AsPlainText -Force
 	$localCreds = New-Object PSCredential($vmUsername, $vmPassword)
@@ -111,7 +124,16 @@
 	Write-Host "Changing the computer name to '$vmName'"
 	#"APPLOG| Changing the computer name to '$vmName'" | WriteFile
 	$cmd = "Rename-Computer -NewName '$vmName' -Restart"
-	Invoke-VMScript -VM $vm -ScriptType Powershell -ScriptText $cmd -GuestCredential $localcreds -ErrorAction Ignore -WarningAction Ignore
+	Invoke-VMScript -VM $vm -ScriptType Powershell -ScriptText $cmd -GuestCredential $localcreds  -ErrorAction Ignore -WarningAction Ignore
 	Start-Sleep -s 30
 	
-	Write-Host "================ $vmName COMPUTER NAME CHANGE SCRIPT START==============="
+	$computerName = (Get-VM -Name $vmName).Guest.HostName
+	Write-Host "Post computer name change of $vmName : "$computerName
+	if($computerName -ne $vmName)
+	{
+		Write-Error "COMPUTER_NAME_CHANGE_FAILED"
+		Write-Error "Changing the computer name to $vmName failed."
+		cleanUp $vm
+		exit -1
+	}
+	Write-Host "================ $vmName COMPUTER NAME CHANGE SCRIPT END==============="

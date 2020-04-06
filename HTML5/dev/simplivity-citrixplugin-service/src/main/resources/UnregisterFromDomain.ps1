@@ -69,6 +69,7 @@
 
 	if (-Not ($vmName -And $vcenterHostname -And $vmUsername -And $vmPassword -And $adUsername -And $adPassword -And $ovcUsername -And $ovcPassword) ) {
 		##"APPLOG Few or all the required parameters are missing" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_REMOVE_DOMAIN"
 		Write-Error "Few or all the required parameters are missing"
 		exit 1
 	}
@@ -77,8 +78,21 @@
 	##"APPLOG| Input parameters successfully read for unregister from damain VM $vmName" | WriteFile
 	set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-	Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+	#Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
 	#Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword	
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	
 	function cleanUp{
 		param ($vm)
@@ -93,8 +107,8 @@
 			$res = Stop-VM -VM $vm -Confirm:$false
 			if((!($res|select PowerState) -Match 'PoweredOff'))
 			{
-				##"APPLOG Unable to power of the VM '$vmName'" | WriteFile
-				Write-Host "Unable to power of the VM '$vmName'"
+				Write-Error "UNABLE_TO_POWER_OFF_VM"
+				Write-Error "Unable to power of the VM '$vmName'"
 				exit 1
 			}
 		}
@@ -104,6 +118,16 @@
 		exit 1
 	}
 	
+	$vm = Get-VM -name $vmName
+	$oldHostName = (Get-VM $vmName).Guest.HostName
+	Write-Host "Computer Host name before unjoining the domian $oldHostName"
+	
+	Stop-VM -VM $vm -Confirm:$false
+	
+	Start-sleep 30
+	
+	Start-VM -VM $vmName
+	Start-sleep 30
 	#"APPLOG| Unjoin $vmName from AD domain $domain" | WriteFile 
 	Write-Host "Unjoin $vmName from AD domain $domain"
 	
@@ -126,7 +150,7 @@
 		Write-Host -NoNewLine "."
 
 		if ($count -eq 0) {
-		#"APPLOG VM $vmName doesn't start properly"
+		Write-Error "VM_DIDNT_COME_UP_POST_UNREGISTERING_FROM_DOMAIN"
 		Write-Error "VM $vmName doesn't start properly"
 			exit 1
 		}
@@ -136,7 +160,7 @@
 		## check pattern match for ipv4
 		if( $vmIP -Match "[a-z]")
 		{
-			#"APPLOG Got IPv6 address instead of IPv4 address '$vmIP'" | WriteFile
+			Write-Error "GOT_IPV6_ADDRESS"
 			Write-Error "Got IPv6 address instead of IPv4 address '$vmIP'"
 			cleanUp $vm
 			exit -1
@@ -149,10 +173,10 @@
 	Write-Host "Removed '$vmName' entry from Active Directory"
 
 	$defaultDomain = "WORKGROUP"
-	if( !(Get-VM $vmName).Guest.HostName -Match $defaultDomain)
+	if( ((Get-VM $vmName).Guest.HostName) -Match $oldHostName)
 
 	{
-		#"APPLOG VM $vmName didnt get unjoined from domain" | WriteFile
+		Write-Error "UNABLE_TO_UNREGISTER_FROM_DOMAIN"
 		Write-Error "VM $vmName didnt get unjoined from domain"
 		cleanUp $vm
 		exit 1

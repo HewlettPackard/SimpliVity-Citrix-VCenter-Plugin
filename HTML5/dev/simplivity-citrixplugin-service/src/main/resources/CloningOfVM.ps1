@@ -50,8 +50,9 @@ $sleep_time = 10
 				$count = $count - 1
 				if ($count -eq 0) {
 					#"ERRLOG| Unable to ping the VM $vmName " | WriteFile
-					Write-Error "Unable to ping the VM $vmName"
-					cleanUp $vm
+					#Write-Error "UNABLE_TO_PING_IP"
+					#Write-Error "Unable to ping the VM $vmName"
+					#cleanUp $vm
 					#exit 1
 					return $false 
 				}
@@ -59,6 +60,7 @@ $sleep_time = 10
 			Catch
 			{
 				#"ERRLOG| Test-Connection Failed $_.ExceptionItemName  $_.Exception.Message" | WriteFile
+				Write-Error "EXCEPTION_PING_IP"
 				Write-Error " $_.ExceptionItemName $_.Exception.Message"
 			}
 		}
@@ -93,7 +95,7 @@ $sleep_time = 10
 		Remove-VM -VM $vm -confirm:$false
 		exit 1
 	}
-	Write-Host "Debug: Input file : $inputfile"
+
 	filter WriteFile {
 	Try {
 		"$(Get-Date -Format s)|$hostname|$_" | Out-File -FilePath $logFile -Append -Encoding ASCII
@@ -165,6 +167,7 @@ $sleep_time = 10
 
 	if (-Not ($vmName -And $vmTemplate -And $vcenterHostname -And $ovcUsername -And $ovcPassword) ) {
 		#"ERRLOG| Few or all the required parameters are missing for $vmName" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_FOR_CLONING"
 		Write-Error "Few or all the required parameters are missing"
 		exit 1
 	}
@@ -175,7 +178,19 @@ $sleep_time = 10
 	#Write-Host "MODEL NAME READ for $vmName: $modelName"
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
     #Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
-    Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
+    try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	
 	Write-Host "================ $vmName CLONING OF VM SCRIPT START==============="
 	
@@ -184,6 +199,7 @@ $sleep_time = 10
 	if( !$template)
 	{
 		#"ERRLOG| Failed to get template $template $_.ExceptionItemName. $_.Exception.Message" | WriteFile
+		Write-Error "NO_TEMPLATE_FOUND"
 		Write-Error "Failed to get template $template $_.ExceptionItemName. $_.Exception.Message"
 		exit -1
 	} 
@@ -227,6 +243,11 @@ $sleep_time = 10
 		$access_token = $response.access_token;
 		Write-Host "$vmName Simplivity Token "$access_token
 
+		if(!$access_token)
+		{
+			Write-Error "ACCESS_TOKEN_CREATION_FAILED"
+			Write-Error "SimpliVity Access Token creation failed for $vmName, please make sure that you provide correct credentials of OVC."
+		}
 		# Add the access_token to the header.
 		$header =@{Authorization='Bearer '+$access_token}
 
@@ -235,6 +256,13 @@ $sleep_time = 10
 		$vms = Invoke-RestMethod -Header $header -Uri $url
 		$templateid = $vms.virtual_machines.id
 		Write-Host "TemplateID::"$templateid
+		
+		if(!$templateid)
+		{
+			Write-Error "NO_TEMPLATE_FOUND"
+			Write-Error "No template found with the name $vmTemplate"
+			exit 1
+		}
 
 		$body = @{virtual_machine_name=$vmName}
 		$body = $body | ConvertTo-Json
@@ -244,7 +272,24 @@ $sleep_time = 10
 		$response= Invoke-RestMethod -Uri $url -Headers $header -Body $body -Method Post -ContentType 'application/vnd.simplivity.v1+json'
 		Write-Host "$vmName Simplivity Clone Response: "$response
 		start-sleep $sleep_time
+		$vmtemp = Get-Template -Name $vmName
+		if(!$vmtemp)
+		{
+			Write-Error "SIMPLIVITY_CLONE_FAILED"
+			Write-Error "VM $vmName creation failed!"
+			exit 1
+		}
 		$vmtemp = Get-Template -Name $vmName | Set-Template -ToVM
+		Start-sleep 20
+		
+		$vmtemp = Get-VM -Name $vmName
+		if(!$vmtemp)
+		{
+			Write-Error "SIMPLIVITY_CLONE_FAILED"
+			Write-Error "VM $vmName creation failed!"
+			exit 1
+		}
+		
 	}
 	else{
 		Write-Host "Cloning VM using POWERCLI comands $vmName"
@@ -258,7 +303,11 @@ $sleep_time = 10
 	$vm = Get-vm -Name $vmName
 	Write-Host "Getting VM post Sleep $vmName "
 	
-	
+	if(!$vm)
+	{
+		Write-Error "VM_CREATION_FAILED"
+		Write-Error "VM $vmName creation failed!"
+	}
 	Start-VM -VM $vm
 	write-Host "Powering on new Virtual machine $vmName"
 	#"APPLOG| Powering on new Virtual machine $vmName" | WriteFile
@@ -286,7 +335,8 @@ $sleep_time = 10
 		if(!$pingResponse)
 		{
 				#"ERRLOG| VM $vmName didnt come up after assigning static IP" | WriteFile
-				Write-Error "VM $vmName didnt come up after assigning static IP"
+				Write-Error "VM_DIDNT_COMEUP"
+				Write-Error "VM $vmName didnt come up after assigning static IP. Please make sure that the static IP given is free"
 				
 				exit 1
 				
@@ -298,7 +348,8 @@ $sleep_time = 10
 		Write-Host "STATIC IP::"$staticIP
 		if ($newIP -ne $staticIP)
 		{
-			Write-Error #"ERRLOG|Static IP assignment Failed. Please make sure that the static IP given is free"
+			Write-Error "ERRLOG|Static IP assignment Failed. Please make sure that the static IP given is free"
+			Write-Error "STATIC_IP_ASSGIGNMENT_FAILED"
 			#"ERRLOG|Static IP assignment Failed. Please make sure that the static IP given is free" | WriteFile
 			cleanUp $vm
 			exit -1
@@ -329,6 +380,7 @@ $sleep_time = 10
 			if( $vmIP -Match "[a-z]")
 			{
 				#"ERRLOG| Got IPv6 address instead of IPv4 address '$vmIP' for VM $vmName" | WriteFile
+				Write-Error "IPV6_ASSIGNMENT"
 				Write-Error "Got IPv6 address instead of IPv4 address '$vmIP' for VM $vmName"
 				cleanUp $vm
 				exit -1

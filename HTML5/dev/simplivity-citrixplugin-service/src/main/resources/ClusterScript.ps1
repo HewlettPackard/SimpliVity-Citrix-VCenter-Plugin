@@ -39,7 +39,7 @@ Catch {
 	Write-Host "Output: "$outputFile
 	Write-Host "vCenterHostName: "$vcenterHostname
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-	Connect-VIServer -Server $vcenterHostname -Username $username -Password $password
+	Connect-VIServer -Server $vcenterHostname -AllLinked -Username $username -Password $password
 	#Connect-viserver -server albanyvc.demo.local -Username $username -Password $password
 	write-Host "Enetered Cluster Script "
 	Get-vmhost | Select Name, @{N="Cluster";E={Get-Cluster -VMHost $_}} |Export-csv $outputFile

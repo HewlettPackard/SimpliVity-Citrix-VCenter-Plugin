@@ -67,8 +67,9 @@ public class ClusterServiceImpl implements ClusterService {
 			fileUtil.deleteFile(fileUtil.getClusterOutputPath());
 		} else {
 			buildClusterMapForNonWindowsSystem();
-			fileUtil.deleteRemoteFile("Administrator", "10.20.6.243", "HP1nvent", "./clusterInput.psd1");
-			fileUtil.deleteRemoteFile("Administrator", "10.20.6.243", "HP1nvent", "./cluterOutput.csv");
+			RemoteWindowsVMData rwvd = fileUtil.getOVCData().getRemoteWindowsVMData();
+			fileUtil.deleteRemoteFile(rwvd.getWinUsername(), rwvd.getWinIP(), rwvd.getWinPassword(), "./clusterInput.psd1");
+			fileUtil.deleteRemoteFile(rwvd.getWinUsername(), rwvd.getWinIP(), rwvd.getWinPassword(), "./cluterOutput.csv");
 			//fileUtil.deleteRemoteFile("Administrator", "10.20.6.243", "HP1nvent", "./cluster.ps1");
 		}
 		clusterMap = fileUtil.getClusterMap();
@@ -126,6 +127,10 @@ public class ClusterServiceImpl implements ClusterService {
 		RemoteWindowsVMData rwd = fileUtil.getOVCData().getRemoteWindowsVMData();
 		String hostname = rwd.getWinIP();//"10.20.6.243";
 		String username = rwd.getWinUsername(), password = rwd.getWinPassword();
+		InputStream stdout = null;
+		BufferedReader br = null;
+		InputStream stderr = null;
+		BufferedReader err = null;
 
 		if (clusterScript == null) {
 			msg = "Error in reading the ClusterScript file";
@@ -165,18 +170,17 @@ public class ClusterServiceImpl implements ClusterService {
 			Session sess = conn.openSession();
 			sess.execCommand("powershell "+clusterScript+" -inputFile " + inputFile
 					+ " -logFile ./info.log");
-			InputStream stdout = new StreamGobbler(sess.getStdout());
-			BufferedReader br = new BufferedReader(
+			stdout = new StreamGobbler(sess.getStdout());
+			br = new BufferedReader(
 					new InputStreamReader(stdout));
 			while (true) {
 				String line = br.readLine();
 				if (line == null)
 					break;
-				//System.out.println(line);
 				logger.debug(line);
 			}
-			InputStream stderr = new StreamGobbler(sess.getStderr());
-			BufferedReader err = new BufferedReader(new InputStreamReader(
+			stderr = new StreamGobbler(sess.getStderr());
+			err = new BufferedReader(new InputStreamReader(
 					stderr));
 
 			String line = null;
@@ -185,15 +189,27 @@ public class ClusterServiceImpl implements ClusterService {
 				logger.error("ERRPR:"+line);
 			}
 			// System.out.println("Exit code" + sess.getExitStatus());
-			br.close();
-			err.close();
 			sess.close();
 			conn.close();
 			retVal = true;
+			err.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Exception occured while executing Cluster script", e);
 			retVal = false;
+		}
+		finally{
+			try
+			{
+				if(stdout != null) stdout.close();
+				if(stderr != null) stderr.close();
+				if(br != null) br.close();
+				if(err != null) err.close();
+			}
+			catch(Exception e)
+			{
+				logger.debug("Error while closing streams whiel executing ClusterScript remotely");
+			}
 		}
 		return retVal;
 	}
@@ -218,6 +234,9 @@ public class ClusterServiceImpl implements ClusterService {
 		String csvFile = "./cluterOutput.csv";
 		Map<String, List<String>> map = fileUtil.getClusterMap();
 		RemoteWindowsVMData rwd = fileUtil.getOVCData().getRemoteWindowsVMData();
+		InputStream stream = null;
+		BufferedReader br = null;
+		InputStreamReader reader = null;
 
 		try {
 			session = jsch.getSession(rwd.getWinUsername(), rwd.getWinIP(), 22);
@@ -230,8 +249,9 @@ public class ClusterServiceImpl implements ClusterService {
 			channel.connect();
 			logger.debug("Connected to SFTP");
 			ChannelSftp sftpChannel = (ChannelSftp) channel;
-			InputStream stream = sftpChannel.get(csvFile);
-			BufferedReader br = new BufferedReader(new InputStreamReader(stream));
+			stream = sftpChannel.get(csvFile);
+			reader = new InputStreamReader(stream);
+			br = new BufferedReader(reader);
 
 			// Cleaning the map
 			map = null;
@@ -278,6 +298,22 @@ public class ClusterServiceImpl implements ClusterService {
 			msg = "Error occured while reading the csv file containing csv file";
 			e.printStackTrace();
 			logger.error(msg, e);
+		}
+		finally
+		{
+			try
+			{
+				if(stream != null)
+					stream.close();
+				if(reader != null)
+					reader.close();
+				if(br != null)
+					br.close();
+			}
+			catch(Exception e)
+			{
+				logger.error("Exception while closing the CSV file", e);
+			}
 		}
 	}
 

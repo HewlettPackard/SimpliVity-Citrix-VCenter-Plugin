@@ -43,6 +43,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 	private Message message = null;
 	private String msg = null;
 	private RemoteWindowsVMData remoteVmData;
+	private String RWD_ERROR = null;
 
 	public ConfigurationServiceImpl() {
 	}
@@ -81,7 +82,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			logger.debug(msg);
 			configureInputData.setOvcData(ovcData);
 		} else {
-			msg = "OVC/ILO Data is not set. Please submit the OVC/ILO details";
+			msg = "Platform Data is not set. Please submit the platform details";
 			logger.error(msg);
 			message.error = msg;
 			return message;
@@ -91,7 +92,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			remoteVmData = ovcData.getRemoteWindowsVMData();
 			if ( remoteVmData == null
 					|| ovcData.getRemoteWindowsVMData().isEmpty()) {
-				msg = "Windows details not set. Please submit Windows details along with OVC/ILO details";
+				msg = "Windows details not set. Please submit Windows details along with platform details";
 				logger.error(msg);
 				message.error = msg;
 				return message;
@@ -112,6 +113,14 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			{
 				if(!remotelyFetchModelName(configureInputData))
 				{
+					if(RWD_ERROR != null)
+					{
+						msg = RWD_ERROR;
+						logger.error(msg);
+						message.error = msg;
+						RWD_ERROR = null;
+						return message;
+					}
 					msg = "Invalid HPE platform found";
 					logger.error(msg);
 					message.error = msg;
@@ -121,6 +130,13 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		}
 
 		if (!prepareInputFile(configureInputData)) {
+			if(RWD_ERROR != null)
+			{
+				msg = RWD_ERROR;
+				logger.error(msg);
+				message.error = msg;
+				return message;
+			}
 			msg = "Error in creating input file for Configure";
 			logger.error(msg);
 			message.error = msg;
@@ -134,7 +150,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		{
 			PowershellExecutionUtil powershellUtil = new PowershellExecutionUtil();
 			result = powershellUtil.callPowerShellScript(configureInputData,
-					scriptList);
+					scriptList, fileUtil.getHostname(), fileUtil.getErrorMap());
 		}
 		else
 		{
@@ -145,7 +161,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			    return message;
 			}*/
 			RemotePowershellExecutionUtil powershellUtil = new RemotePowershellExecutionUtil();
-			result = powershellUtil.callPowerShellScript(configureInputData, scriptList, fileUtil.getHostname());
+			result = powershellUtil.callPowerShellScript(configureInputData, scriptList, fileUtil.getHostname(),
+					fileUtil.getErrorMap());
 		}
 
 		if (result == null || result == "") {
@@ -213,6 +230,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 	}
 
 	
+	@SuppressWarnings("unused")
 	private boolean prepareConfigureScriptList(List<ScriptInfo> configureScriptList) 
 	{
 		logger.debug("Entered prepareConfigureScriptList method:"+ configureScriptList);
@@ -305,7 +323,12 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			{
 				inputFilename = "./"+configureInputData.getVmData().get(ix).getVmName()+ ".psd1";
 				RemoteWindowsVMData winData = configureInputData.getOvcData().getRemoteWindowsVMData();
-				fileUtil.writeRemoteFile(winData.getWinUsername(), winData.getWinIP(), winData.getWinPassword(), inputFilename, sFileLine);
+				if(!fileUtil.writeRemoteFile(winData.getWinUsername(), winData.getWinIP(), winData.getWinPassword(), inputFilename, sFileLine))
+				{
+					logger.error("Erorr in writing input file to remote Windows machine.");
+					RWD_ERROR = "Unable to write a file to remote Windows VM. Please restart the remote Windows VM and try again.";
+					return false;
+				}
 			}
 			filenameList.add(inputFilename);
 		} // Loop
@@ -401,6 +424,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		int identifier = -1; 
 		FileWriter fw = null;
 		String line = "";
+		File fileObj = null;
 		
 		if(fileUtil.isWindows())
 		{
@@ -408,7 +432,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		}
 		else
 		{
-			identifier = getUniqueIdentifierFromRemoteFile() + 1;
+			//identifier = getUniqueIdentifierFromRemoteFile() + 1;
+			identifier = getUniqueIdentifier() + 1;
 		}
 		if (identifier != -1) {
 			try {
@@ -426,14 +451,17 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 				}
 				if(fileUtil.isWindows())
 				{
-					File fileObj = new File(fileName);
+					fileObj = new File(fileName);
 					fw = new FileWriter(fileObj, true);
 					fw.write(line);
 				}
 				else
 				{
-					RemoteWindowsVMData rwd = fileUtil.getOVCData().getRemoteWindowsVMData();
-					fileUtil.appendRemoteFile(rwd.getWinUsername(), rwd.getWinIP(), rwd.getWinPassword(), fileName, line);
+					//RemoteWindowsVMData rwd = fileUtil.getOVCData().getRemoteWindowsVMData();
+					//fileUtil.appendRemoteFile(rwd.getWinUsername(), rwd.getWinIP(), rwd.getWinPassword(), fileName, line);
+					fileObj = new File(fileName);
+					fw = new FileWriter(fileObj, true);
+					fw.write(line);
 				}
 				
 			} catch (IOException ioe) {
@@ -444,7 +472,11 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 				logger.error(msg, e);
 			} finally {
 				try {
-					fw.close();
+					if(fw != null)
+					{
+						fw.close();
+					}
+					
 				} catch (Exception e) {
 					msg = "Error while closing the deconfigure entry file while writing entries to the file";
 					logger.error(msg, e);
@@ -524,7 +556,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			e.printStackTrace();
 		} finally {
 			try {
-				br.close();
+				if(br != null)
+					br.close();
 			} catch (Exception e) {
 				msg = "error in closing the Deconfigure entry file"
 						+ e.toString();
@@ -551,6 +584,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		JSch jsch = new JSch();
 		com.jcraft.jsch.Session session = null;
 		RemoteWindowsVMData rwd = fileUtil.getOVCData().remoteWindowsVMData;
+		InputStream stream = null;
+		InputStreamReader inputStreamReader = null;
 		try {
 
 			if (fileUtil.checkRemoteFileExists(rwd.getWinUsername(),
@@ -569,9 +604,10 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 					channel.connect();
 					logger.debug("Connected to SFTP");
 					ChannelSftp sftpChannel = (ChannelSftp) channel;
-					InputStream stream = sftpChannel.get(fileUtil
+					stream = sftpChannel.get(fileUtil
 							.getDeconfigureEntryFilePath());
-					br = new BufferedReader(new InputStreamReader(stream));
+					inputStreamReader = new InputStreamReader(stream);
+					br = new BufferedReader(inputStreamReader);
 					while ((currentLine = br.readLine()) != null) {
 						lastLine = currentLine;
 						flag = true;
@@ -624,6 +660,10 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			try {
 				if (br != null)
 					br.close();
+				if(inputStreamReader != null)
+					inputStreamReader.close();
+				if(stream != null)
+					stream.close();
 			} catch (Exception e) {
 				msg = "error in closing the Deconfigure entry file"
 						+ e.toString();
@@ -729,6 +769,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			sFileLine += "\tusername = " + "\'"+ fileUtil.getOVCData().getOVCUserName() + "\'\r\n";
 			sFileLine += "\tpassword = " + "\'"+ fileUtil.getOVCData().getOVCPassword() + "\'\r\n";
 			sFileLine += "\tcount = " + "\'" + count + "\'\r\n";
+			sFileLine += "\thostname = " + "\'" + fileUtil.getHostname()+ "\'\r\n";
 			sFileLine += "\thostname1 = " + "\'"+ configureInputData.getVmData().get(0).vmHost + "\'\r\n";
 			if (count == 2) {
 				sFileLine += "\thostname2 = " + "\'"+ configureInputData.getVmData().get(1).vmHost+ "\'\r\n";
@@ -845,6 +886,8 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 			logger.error(
 					"Error occured while reading the csv file containing csv file",
 					ioe);
+			RWD_ERROR = "Unable to fetch the HPE model name. Remote windows VM is not responding, please restrat the VM and try again.";
+			flag = false;
 		} catch (Exception e) {
 			e.printStackTrace();
 			logger.error("Error occured while reading the csv file containing csv file",e);

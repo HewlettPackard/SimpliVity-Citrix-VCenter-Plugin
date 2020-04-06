@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -31,9 +32,12 @@ public class RemotePowershellExecutionUtil
 	private String msg = null;
 	static int flag1 = 0;
 	static int flag2= 0;
+	static String error1 = "";
+	static String error2 = "";
 	ServiceInstance si;
 	HostSystem host;
 	RemoteWindowsVMData rwvd;
+	static Map<String, String> ERROR_MAP = null;
 
 	
 	public RemotePowershellExecutionUtil() {}
@@ -47,7 +51,7 @@ public class RemotePowershellExecutionUtil
 	 * @param scriptPath
 	 * @return RETURNSTATE
 	 */
-	public String callPowerShellScript(BaseInputData baseInputData, List<ScriptInfo> scriptList, String hostname)
+	public String callPowerShellScript(BaseInputData baseInputData, List<ScriptInfo> scriptList, String hostname, Map<String, String> erroMap)
 	{
 		logger.debug("Entered callPowerShellScript method: "+baseInputData+" "+hostname+" "+scriptList);
 		if(baseInputData == null || baseInputData.isEmpty())
@@ -70,18 +74,14 @@ public class RemotePowershellExecutionUtil
 			logger.debug(msg);
 			return msg;
 		}
+		
+		ERROR_MAP = erroMap;
 		try
 		{
 			int numberOfThreads = baseInputData.getInputFileList().size();
 			logger.debug("Number of Threads::"+numberOfThreads);
-			PowershellExecutor[] arrayOfThreads = new PowershellExecutor[numberOfThreads];
+			RemotePowershellExecutor[] arrayOfThreads = new RemotePowershellExecutor[numberOfThreads];
 			
-			/*InetAddress inetAddress = InetAddress.getLocalHost();
-			System.out.println("inetAddress:"+inetAddress);*/
-			//String url = null;
-			//System.out.println("URL:"+url);
-			//Remove this post testing
-			//url = "albanyvc.demo.local";
 			String url = "https://"+hostname+"/sdk";
 			//System.out.println("POST Modification URL:"+url);
 			
@@ -91,9 +91,10 @@ public class RemotePowershellExecutionUtil
 			logger.debug("Mes:: "+mes);
 			host = (HostSystem)mes[0];
 			logger.debug("Host:"+host);
+			//ERROR_MAP = erroMap;
 			for(int index=0; index < numberOfThreads; index++)
 			{
-				arrayOfThreads[index] = new PowershellExecutor(baseInputData, index, scriptList, si, host, rwvd);
+				arrayOfThreads[index] = new RemotePowershellExecutor(baseInputData, index, scriptList, si, host, rwvd);
 				arrayOfThreads[index].start();
 			}
 			
@@ -118,6 +119,9 @@ public class RemotePowershellExecutionUtil
 			{
 				flag1 = 0;
 				msg = "Exceptions occured during operation for the VM "+baseInputData.getVmData().get(0).getVmName()+". Please check the logs for more information.";
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName());
+				if(error1 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error1;
 				logger.debug(msg);
 				return msg;
 			}
@@ -127,15 +131,26 @@ public class RemotePowershellExecutionUtil
 			if(flag1 == -1 && flag2 == -1)
 			{
 				flag1 = 0; flag2 = 0;
-				msg = "Exceptions occured while executing the thread(s). Please check the logs";
+				msg = "Exceptions occured during operation on both the VMs. Please check the logs for more information.";
 				logger.debug(msg);
-				return "Exceptions occured during operation on both the VMs. Please check the logs for more information.";
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName());
+				error2 = getErrorDescription(error2, baseInputData.getVmData().get(1).getVmName());
+				if(error1 != null && error2 != null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error1+"\n2. "+error2;
+				else if(error1 == null && error2 != null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error2;
+				else if( error1 != null && error2 == null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error1;
+				return msg;
 			}
 			if(flag1 == -1 && flag2 == 0)
 			{
 				flag1 = 0;
 				msg = "Error occured while performing operation on VM "+baseInputData.getVmData().get(0).getVmName()+". Please check logs for more info.";
 				logger.error(msg);
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName());
+				if(error1 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error1;
 				return msg;
 			}
 			if(flag1 == 0 && flag2 == -1)
@@ -143,18 +158,42 @@ public class RemotePowershellExecutionUtil
 				flag2 = 0;
 				msg = "Error occured while performing operation on VM "+baseInputData.getVmData().get(1).getVmName()+". Please check logs for more info.";
 				logger.error(msg);
+				error2 = getErrorDescription(error2, baseInputData.getVmData().get(1).getVmName());
+				if(error2 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error2;
 				return msg;
 			}
 		}
-				
+		RemotePowershellExecutionUtil.error1 = "";
+		RemotePowershellExecutionUtil.error2 = "";
 		return "success";
 	}
-		
+	
+	public synchronized static String getErrorDescription(String error, String vmName)
+	{
+		logger.debug("Entered into getErrorDescription method: "+error+" "+vmName);
+		String retVal = null;
+		if(error != null)
+		{
+			for(Map.Entry<String,String> entry: ERROR_MAP.entrySet())
+			{
+				if( error.contains(entry.getKey()))
+				{
+					System.out.println("VALUE:"+entry.getValue());
+					retVal = entry.getValue().replaceAll("VM_NAME", vmName);
+					break;
+				}
+			}
+		}
+		logger.debug("Returning from getErrorDescription method: "+retVal);
+		return retVal;
+	}
+	
 	/**
 	 * Thread class to run the scripts
 	 *
 	 */
-	static class PowershellExecutor extends Thread
+	static class RemotePowershellExecutor extends Thread
 	{
 		BaseInputData baseInputData;
 		int index = -1;
@@ -169,9 +208,9 @@ public class RemotePowershellExecutionUtil
 		Connection conn;
 		Session sess;
 		
-		public PowershellExecutor() {}
+		public RemotePowershellExecutor() {}
 		
-		PowershellExecutor(BaseInputData inputData, int index, List<ScriptInfo> scriptList, ServiceInstance si, HostSystem host, RemoteWindowsVMData rwvd)
+		RemotePowershellExecutor(BaseInputData inputData, int index, List<ScriptInfo> scriptList, ServiceInstance si, HostSystem host, RemoteWindowsVMData rwvd)
 		{
 			this.baseInputData = inputData;
 			this.index = index;
@@ -246,13 +285,18 @@ public class RemotePowershellExecutionUtil
 		    				if(index == 0)
 		                	{
 		                		RemotePowershellExecutionUtil.flag1 = -1;
+		                		RemotePowershellExecutionUtil.error1 += line;
 		                	}
 		                	else if (index == 1)
 		                	{
 		                		RemotePowershellExecutionUtil.flag2 = -1;
+		                		RemotePowershellExecutionUtil.error2 += line;
 		                	}
 		                	failure = true;
-		    				RemotePowershellExecutionUtil.logger.error("ERRPR:"+line);
+		    				//RemotePowershellExecutionUtil.logger.error("ERROR_1:"+error1);
+		    				//RemotePowershellExecutionUtil.logger.error("ERROR_2:"+error2);
+		    				//logger.debug("FLAG1:"+RemotePowershellExecutionUtil.flag1+" FLAG2:"+RemotePowershellExecutionUtil.flag2);
+		    				
 		    			}
 		    			// System.out.println("Exit code" + sess.getExitStatus());
 		    			br.close();
@@ -263,10 +307,11 @@ public class RemotePowershellExecutionUtil
 		                if(failure)
 		                {
 		                	RemotePowershellExecutionUtil.logger.error("Error occured while executing the script"+scriptList.get(i).scriptName);
-		                	RemotePowershellExecutionUtil.logger.error("TASK STATUS::"+task.getTaskInfo().toString());
+		                	//RemotePowershellExecutionUtil.logger.error("TASK STATUS::"+task.getTaskInfo().toString());
 		                	//task.setTaskState(TaskInfoState., null, null);
 		                	task.cancelTask();
-		                	RemotePowershellExecutionUtil.logger.error("Error occured during execution of "+scriptList.get(i).scriptName);
+		                	RemotePowershellExecutionUtil.logger.error("ERROR1:"+RemotePowershellExecutionUtil.error1);
+		                	RemotePowershellExecutionUtil.logger.error("ERROR2:"+RemotePowershellExecutionUtil.error2);
 		                	return;
 		                }
 		                else

@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.log4j.Logger;
 
@@ -31,6 +32,9 @@ public class PowershellExecutionUtil
 	static int flag2= 0;
 	ServiceInstance si;
 	HostSystem host;
+	static Map<String, String> ERROR_MAP = null;
+	static String error1 = "";
+	static String error2 = "";
 
 	
 	public PowershellExecutionUtil() {}
@@ -44,7 +48,7 @@ public class PowershellExecutionUtil
 	 * @param scriptPath
 	 * @return RETURNSTATE
 	 */
-	public String callPowerShellScript(BaseInputData baseInputData, List<ScriptInfo> scriptList)
+	public String callPowerShellScript(BaseInputData baseInputData, List<ScriptInfo> scriptList,String hostname, Map<String, String> erroMap)
 	{
 		logger.debug("Entered callPowerShellScript method: "+baseInputData+" "+scriptList);
 		if(baseInputData == null || baseInputData.isEmpty())
@@ -66,13 +70,13 @@ public class PowershellExecutionUtil
 			logger.debug("Number of Threads::"+numberOfThreads);
 			PowershellExecutor[] arrayOfThreads = new PowershellExecutor[numberOfThreads];
 			
-			InetAddress inetAddress = InetAddress.getLocalHost();
+			/*InetAddress inetAddress = InetAddress.getLocalHost();
 			logger.debug("inetAddress:"+inetAddress);
-			String url = inetAddress.getHostAddress();
+			String url = inetAddress.getHostAddress();*/
 			//System.out.println("URL:"+url);
 			//Remove this post testing
 			//url = "albanyvc.demo.local";
-			url = "https://"+url+"/sdk";
+			String url = "https://"+hostname+"/sdk";
 			//System.out.println("POST Modification URL:"+url);
 			logger.debug("OVCData:"+baseInputData.getOvcData());
 			si = new ServiceInstance(new URL(url), baseInputData.getOvcData().getOVCUserName(), baseInputData.getOvcData().getOVCPassword());
@@ -81,6 +85,7 @@ public class PowershellExecutionUtil
 			logger.debug("Mes:: "+mes);
 			host = (HostSystem)mes[0];
 			logger.debug("Host:"+host);
+			ERROR_MAP = erroMap;
 			for(int index=0; index < numberOfThreads; index++)
 			{
 				arrayOfThreads[index] = new PowershellExecutor(baseInputData, index, scriptList, si, host);
@@ -107,6 +112,9 @@ public class PowershellExecutionUtil
 			{
 				flag1 = 0;
 				msg = "Exceptions occured during operation for the VM "+baseInputData.getVmData().get(0).getVmName()+". Please check the logs for more information.";
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName()); 
+				if(error1 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error1;
 				logger.debug(msg);
 				return msg;
 			}
@@ -116,14 +124,25 @@ public class PowershellExecutionUtil
 			if(flag1 == -1 && flag2 == -1)
 			{
 				flag1 = 0; flag2 = 0;
-				msg = "Exceptions occured while executing the thread(s). Please check the logs";
+				msg = "Exceptions occured during operation on both the VMs. Please check the logs for more information.";
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName());
+				error2 = getErrorDescription(error2, baseInputData.getVmData().get(1).getVmName());
+				if(error1 != null && error2 != null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error1+"\n2. "+error2;
+				else if(error1 == null && error2 != null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error2;
+				else if( error1 != null && error2 == null)
+					msg = msg +"\n"+"Breif Error Information: \n1. "+error1;
 				logger.debug(msg);
-				return "Exceptions occured during operation on both the VMs. Please check the logs for more information.";
+				return msg;
 			}
 			if(flag1 == -1 && flag2 == 0)
 			{
 				flag1 = 0;
 				msg = "Error occured while performing operation on VM "+baseInputData.getVmData().get(0).getVmName()+". Please check logs for more info.";
+				error1 = getErrorDescription(error1, baseInputData.getVmData().get(0).getVmName());
+				if(error1 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error1;
 				logger.error(msg);
 				return msg;
 			}
@@ -131,12 +150,32 @@ public class PowershellExecutionUtil
 			{
 				flag2 = 0;
 				msg = "Error occured while performing operation on VM "+baseInputData.getVmData().get(1).getVmName()+". Please check logs for more info.";
+				error2 = getErrorDescription(error2, baseInputData.getVmData().get(1).getVmName());
+				if(error2 != null )
+					msg = msg +"\n"+"Breif Error Information: "+error2;
 				logger.error(msg);
 				return msg;
 			}
 		}
-				
+		PowershellExecutionUtil.error1 = "";
+        PowershellExecutionUtil.error2 = "";		
 		return "success";
+	}
+	
+	public static String getErrorDescription(String error, String vmName)
+	{
+		if(error != null)
+		{
+			for(Map.Entry<String,String> entry: ERROR_MAP.entrySet())
+			{
+				if( error.contains(entry.getKey()))
+				{
+					System.out.println("VALUE:"+entry.getValue());
+					return entry.getValue().replaceAll("VM_NAME", vmName); 
+				}
+			}
+		}
+		return null;
 	}
 	
 	/** 
@@ -270,13 +309,16 @@ public class PowershellExecutionUtil
 		                	if(index == 0)
 		                	{
 		                		PowershellExecutionUtil.flag1 = -1;
+		                		PowershellExecutionUtil.error1 += line;
 		                	}
 		                	else if (index == 1)
 		                	{
 		                		PowershellExecutionUtil.flag2 = -1;
+		                		PowershellExecutionUtil.error2 += line;
 		                	}
 		                	failure = true;
 		                	PowershellExecutionUtil.logger.error(line);
+		                	logger.debug("FLAG1:"+PowershellExecutionUtil.flag1+" FLAG2:"+PowershellExecutionUtil.flag2);
 		                }
 
 		                stderr.close();

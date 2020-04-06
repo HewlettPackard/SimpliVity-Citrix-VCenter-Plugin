@@ -6,7 +6,7 @@ param(
 	[string]
 	$logFile
 )
-
+Write-Host "================ $vmName UNINSTALLING CWCCONNECTOR FROM VM SCRIPT START==============="
 $TrustUri = "https://trust.citrixworkspacesapi.net"
 $baseUri  = "https://registry.citrixworkspacesapi.net"
 $hostname = $(hostname)
@@ -59,23 +59,36 @@ Try {
 	}
 
 	if (-Not ($vmName -And $vcenterHostname -And $vmUsername -And $vmPassword -And $ovcUsername -And $ovcPassword) ) {
-		#"ERRLOG| Few or all the required parameters are missing" | WriteFile
+		Write-Error "NO_REQUIRED_PARAMETERS_UNINSTALL_CWC"
 	    Write-Error "Few or all the required parameters are missing"
 	    exit 1
 	}
-	Write-Host "================ $vmName UNINSTALLING CWCCONNECTOR FROM VM SCRIPT START==============="
+	
 	Write-Host "Input parameters successfully read for uninstall CWCConnector from VM $vmName" 
 	#"APPLOG| Input parameters successfully read for uninstall CWCConnector from VM $vmName" | WriteFile
 	set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false
   	Get-Module -Name VMware* -ListAvailable | Import-Module 
-   	Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+   	#Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
    	#Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
 	
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	$vm = Get-VM -Name $vmName
 
 	if(!$vm)
 	{
-		#"ERRLOG| Failed to find VM $vmName $_.ExceptionItemName. $_.Exception.Message" | WriteFile
+		Write-Error "FAILED_TO_GET_VM"
 		Write-Error "Failed to find  VM $vmName $_.ExceptionItemName. $_.Exception.Message"
 		exit -1
 	}
@@ -86,38 +99,37 @@ Try {
 	## check pattern match for ipv4
 	if( $vmIP -Match "[a-z]")
 	{
-		#"ERRLOG| Got IPv6 address instead of IPv4 address '$vmIP'" | WriteFile
+		Write-Error "GOT_IPV6_ADDRESS"
 		Write-Error "Got IPv6 address instead of IPv4 address '$vmIP'"
 		cleanUp $vm
 		exit -1
 	}
 	
-	$cmd = 'c:\cwcconnector.exe /uninstall /q'
+	$cmd = 'C:\Users\Public\cwcconnector.exe /uninstall /q'
 	$uninstallscript = @"
 	Set-ExecutionPolicy Unrestricted
-	Out-File -FilePath C:\ConnectorUninstall.cmd -InputObject '$cmd' -Encoding ascii
+	Out-File -FilePath C:\Users\Public\ConnectorUninstall.cmd -InputObject '$cmd' -Encoding ascii
 "@
 
 	$vmPassword1 = ConvertTo-SecureString $vmPassword -AsPlainText -Force
 	$localCreds = New-Object PSCredential($vmUsername, $vmPassword1)
 
+	$logFile = "C:\Users\Public\uninstall_script.log"
 	# --working
 	Write-Host "Checking whether CWConnector is installed or not"
 	#"APPLOG| Checking whether CWConnector is installed or not" | WriteFile
 	$uninstallationResult = Invoke-VMScript -VM $vm -ScriptText $uninstallscript -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
-
-	$cmd = "Get-ItemProperty HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\* |Select-Object DisplayName"
-	$cwcInstallConfirm = Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
-	Write-Host "cwcInstallConfirm: "$cwcInstallConfirm
-
-	if( $cwcInstallConfirm.ScriptOutput -Match "Citrix Cloud Services Connectivity Test Tool")
+	Write-Host "$vmName DECONFIGURE OUTPUT::"$uninstallationResult
+	
+	if($uninstallationResult -ne $null)
 	{
-		#"APPLOG| Uninstalling the cwcconnector from $vmName" | WriteFile 
-		Write-Host "Uninstalling the cwcconnector from $vmName"
-		Write-Host "localCreds "$localCreds 
-		Start-Process $psexecPath " /accepteula -nobanner -s \\$vmIP  -u $vmUsername -p $vmPassword c:\ConnectorUninstall.cmd" -RedirectStandardError $logFile -NoNewWindow -Wait
-		#$uninstallationResult = Invoke-VMScript -VM $vm -ScriptText $uninstallscript -ScriptType powershell -GuestCredential $localCreds -WarningAction Ignore
-		Write-Host "Exit"$uninstallationResult
+		Write-Host "Uniinstallation completed for $vmName"
+	}
+	else
+	{
+		Write-Error "UNINSTALL_FAILED"
+		Write-Error "Failed to unistall the CWC connector from VM $vmName"
+		exit -1
 	}
 
 	Write-Host "Uninstallation of CWConnector on VM $vmName is done"

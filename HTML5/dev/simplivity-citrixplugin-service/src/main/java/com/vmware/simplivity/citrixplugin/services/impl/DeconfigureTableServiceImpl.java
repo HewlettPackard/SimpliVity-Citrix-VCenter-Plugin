@@ -2,6 +2,7 @@ package com.vmware.simplivity.citrixplugin.services.impl;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -40,7 +41,7 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 		msg = "Entered getDeconfigureEntries method";
 		logger.debug(msg);
 		
-		List<DeconfigureTableEntry> list = new ArrayList<DeconfigureTableEntry>();
+		List<DeconfigureTableEntry> list = null;
 		
 
 		BufferedReader br = null;
@@ -48,7 +49,7 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 		logger.debug("getDeconfigureEntryFilePath: "+file);
 		String line = "";
 	   	String csvSplit = ",";
-	   	File fileObj = null;
+	   	File fileObj = null;	
 	   	boolean flag = false;
 	   	int count = 0;
 	   	RemoteWindowsVMData rwd = fileUtil.getOVCData().getRemoteWindowsVMData();
@@ -56,17 +57,20 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 	   	JSch jsch = new JSch();
 		Session session = null;
 		InputStream stream = null;
+		FileReader fileReader = null;
+		InputStreamReader inputStreamReader = null;
 	   	
 	   	try
 	   	{
 	   		msg = "Reading from DeconfigureFile:"+file;
 	   		logger.debug(msg);
 	   		
-	   		if(fileUtil.isWindows())
+	   		/*if(fileUtil.isWindows())
 	   		{
 	   			fileObj = new File(file);
 		   		fileObj.setReadable(true);
-	   			br = new BufferedReader(new FileReader(fileObj));
+		   		fileReader = new FileReader(fileObj);
+	   			br = new BufferedReader(fileReader);
 	   		}
 	   		else
 	   		{
@@ -83,14 +87,32 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 				logger.debug("Connected to SFTP");
 				ChannelSftp sftpChannel = (ChannelSftp) channel;
 				stream = sftpChannel.get(file);
-				br = new BufferedReader(new InputStreamReader(stream));
+				inputStreamReader = new InputStreamReader(stream);
+				br = new BufferedReader(inputStreamReader);
+	   			logger.debug("Non windows system");
+	   			fileObj = new File(file);
+		   		fileObj.setReadable(true);
+		   		fileReader = new FileReader(fileObj);
+	   			br = new BufferedReader(fileReader);
+	   		}*/
+	   		fileObj = new File(file);
+	   		if(!fileObj.exists())
+	   		{
+	   			logger.warn("Deconfigure entries not created yet.");
+		   		return null;
 	   		}
-	   		
+	   		fileObj.setReadable(true);
+	   		fileReader = new FileReader(fileObj);
+   			br = new BufferedReader(fileReader);
 	   		
 	   		if(br != null)
 	   		{
 	   			while((line = br.readLine()) != null)
 		   		{
+	   				if(list == null)
+	   				{
+	   					list = new ArrayList<DeconfigureTableEntry>();
+	   				}
 		   			String []split = line.split(csvSplit);
 		   			if(split.length == 7)
 		   			{
@@ -120,6 +142,11 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 	   		msg = "DeconfigureEnry List: "+list;
 	   		logger.debug(msg);
 	   	}
+	   	catch(FileNotFoundException foe)
+	   	{
+	   		logger.warn("Deconfigure entries not created yet.");
+	   		return null;
+	   	}
 	   	catch(Exception e)
 	   	{
 	   		msg = "Exception occured during reading from DeconfigureEntry File: "+e.getMessage();
@@ -134,9 +161,17 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 	   			{
 	   				br.close();
 	   			}
+	   			if(inputStreamReader != null)
+	   			{
+	   				inputStreamReader.close();
+	   			}
 	   			if(stream != null)
 	   			{
 	   				stream.close();
+	   			}
+	   			if(fileReader != null)
+	   			{
+	   				fileReader.close();
 	   			}
 	   		}
 	   		catch(Exception e)
@@ -147,11 +182,18 @@ public class DeconfigureTableServiceImpl implements DeconfigureTableService
 	   	}
 	   	msg = "DeconfigureEntries List: "+list;
 	   	logger.debug(msg);
-	   	if(list != null && !list.isEmpty())
+	   	if(list == null || list.isEmpty())
+	   	{
+	   		logger.debug("Deconfigure entries are empty!");
+	   		return null;
+	   	}
+	   	if(list != null && !list.isEmpty() && list.size() >0)
 	   	{
 	   		deconfigureTableEntries = new DeconfigureTableEntries();
 	   		deconfigureTableEntries.setDeconfigureTableEntries(list);
 	   	}
+	   	list = null;
+	   	
 	   	logger.debug("Returning from getDeconfigureEntries method:"+deconfigureTableEntries);
 		return deconfigureTableEntries;
 	}

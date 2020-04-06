@@ -49,6 +49,7 @@
 				$count = $count - 1
 				if ($count -eq 0) {
 					#"ERRLOG| Unable to ping the VM $vmName " | WriteFile
+					Write-Error "UNABLE_TO_PING_VM"
 					Write-Error "Unable to ping the VM $vmName"
 					#cleanUp $vm
 					#exit 1
@@ -58,6 +59,7 @@
 			Catch
 			{
 				#"ERRLOG| Test-Connection Failed $_.ExceptionItemName  $_.Exception.Message" | WriteFile
+				Write-Error "EXCEPTION_PING_IP"
 				Write-Error " $_.ExceptionItemName $_.Exception.Message"
 			}
 		}
@@ -159,9 +161,21 @@
 	#"APPLOG| Input parameters successfully read for Domain Change script:  VM $vmName" | WriteFile
 	
 	Get-Module -Name VMware* -ListAvailable | Import-Module 
-    Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
+    #Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword
     #Connect-viserver -server albanyvc.demo.local -Username $ovcUsername -Password $ovcPassword
-	
+	try {
+		Connect-viserver -server $vcenterHostname -Username $ovcUsername -Password $ovcPassword -ErrorAction Stop
+	}
+	catch [VMware.VimAutomation.ViCore.Types.V1.ErrorHandling.InvalidLogin]{
+		Write-Error "INVALID_LOGIN"
+		exit -1
+	}
+	catch [VMware.VimAutomation.Sdk.Types.V1.ErrorHandling.VimException.ViServerConnectionException]{
+		Write-Error "SERVER_CONNECTION_ERROR"
+		exit -1
+	}
+	catch
+    {Write-Error "UNABLE_TO_CONNECT_SERVER Other issue"}
 	Write-Host "================ $vmName ADDING VM TO DOMAIN SCRIPT START==============="
 	
 	$vm = Get-VM -Name $vmName
@@ -169,8 +183,9 @@
 	if( $vmIP -Match "[a-z]")
 	{
 				#"ERRLOG| Got IPv6 address instead of IPv4 address '$vmIP' for VM $vmName" | WriteFile
+				Write-Error "GOT_IPV6_ADDRESS"
 				Write-Error "Got IPv6 address instead of IPv4 address '$vmIP' for VM $vmName"
-				//cleanUp $vm
+				cleanUp $vm
 				exit -1
 	}
 
@@ -180,7 +195,7 @@
 	Add-Computer -DomainName '$adDomain' -Credential `$adCreds -Force -Restart
 "@
 
-	Write-Host $cmd
+	Write-Host "Command to add VM $vmname to domain "$cmd
 	#"APPLOG| ----------Adding '$vmName' to AD domain '$adDomain'------------"  | WriteFile
 	Write-Host "----------Adding '$vmName' to AD domain '$adDomain'------------"	  
 
@@ -188,6 +203,15 @@
 	$localCreds = New-Object PSCredential($vmUsername, $vmPassword)
 	
 	$domainResult = Invoke-VMScript -VM $vm -ScriptText $cmd -ScriptType powershell -GuestCredential $localCreds  -ErrorAction Ignore -WarningAction Ignore
+	
+	if($domainResult.ScriptOutput)
+	{
+		Write-Host "Error in adding domain!"
+	}
+	else
+	{
+		Write-Host "NoError iin Adding the domain script "
+	}
 
 	Start-Sleep -s 20
 	Write-Host -NoNewLine "Waiting for reboot of VM $vmName"
@@ -213,6 +237,7 @@
 		if(!$pingResponse)
 		{
 			#"ERRLOG| VM $vmName didnt come up after domain change" | WriteFile
+			Write-Error "VM_DIDNT_COME_UP_POST_DOMAIN_ADDITION"
 			Write-Error "VM $vmName didnt come up after domain change"
 			exit 1
 			
@@ -226,13 +251,14 @@
 
 	Start-Sleep -s $sleep_time
 	
-	Write-Host (Get-VM $vmName).Guest.HostName
+	Write-Host "$vmName Computr Name: "(Get-VM $vmName).Guest.HostName
 
 	if( !((Get-VM $vmName).Guest.HostName -Match $adDomain))
 	{
 		#"ERRLOG| VM $vmName didnt get added to domain" | WriteFile
+		Write-Error "VM_NOT_ADDED_TO_DOMAIN"
 		Write-Error "VM $vmName didnt get added to domain"
-		#cleanUp $vm
+		cleanUp $vm
 		exit 1
 }
 Write-Host "================ $vmName ADDING VM TO DOMAIN SCRIPT END==============="
