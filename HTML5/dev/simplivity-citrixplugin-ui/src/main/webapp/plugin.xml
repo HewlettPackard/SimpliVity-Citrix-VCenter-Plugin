@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2018 VMware, Inc. All rights reserved. -->
+
+<!--
+   simplivity-citrixplugin plugin metadata.
+   The <plugin> tag doesn't contain any moduleUri property because it is an HTML plugin.
+
+   In the plugin.xml, resources can be accessed with #{resource_name:key}.
+   The defaultBundle sets a default resource, which can be accessed with #{key}
+   i.e. without the resource_name.
+-->
+
+<plugin id="com.vmware.simplivity.citrixplugin"
+        defaultBundle="com_vmware_simpivity_citrixplugin">
+
+   <!--
+      com_vmware_samples_htmlsample is used for all general localization strings.
+      -->
+   <resources  baseUrl="locales/">
+      <resource>com_vmware_samples_htmlsample</resource>
+   </resources>
+
+   <dependencies>
+      <!-- Allow HTML Client to display plugin icons in menus, shortcuts, object lists
+           Note: the first part of the uri 'simplivity-citrixplugin' is based on 'Web-ContextPath:'  from the 'MANIFEST.MF'
+      -->
+      <dependency type="css" uri="simplivity-citrixplugin/assets/css/plugin-icons.css" />
+   </dependencies>
+
+  <extension id="com.vmware.simplivity.citrixplugin.shortcut">
+      <extendedPoint>vise.home.shortcuts</extendedPoint>
+      <object>
+         <name>HPE SimpliVity CWA Plugin</name>
+         <categoryUid>vsphere.core.controlcenter.monitoringCategory</categoryUid>
+         <icon>#{icon-citrixcloud}</icon>
+         <targetViewUid>com.vmware.simplivity.citrixplugin.ovcDataView</targetViewUid>
+      </object>
+   </extension>
+   <!-- Plugin Navigator Main Entry Point -->
+   <extension id="com.vmware.simplivity.citrixplugin.entryPoint">
+      <extendedPoint>vise.navigator.nodespecs</extendedPoint>
+      <object>
+         <title>HPE SimpliVity CWA Plugin</title>
+         <icon>#{icon-citrixcloud}</icon>
+         <parentUid>vsphere.core.navigator.solutionsCategory</parentUid>
+         <navigationTargetUid>com.vmware.simplivity.citrixplugin.ovcDataView</navigationTargetUid>
+         <viewOpenedUponFocus className="com.vmware.ui.objectnavigator.views.CategoryNodeTreeView" />
+      </object>
+   </extension>
+
+         <!-- ovc Navigator Category Item and Global View -->
+   <extension id="com.vmware.simplivity.citrixplugin.ovcDataView">
+      <extendedPoint>vise.global.views</extendedPoint>
+      <object>
+         <name>OVC Data</name>
+         <contentSpec>
+            <url>simplivity-citrixplugin/index.html?view=setovcdata</url>
+            <metadata>
+               <entry>
+                  <key>hasTitle</key>
+                  <value>false</value>
+               </entry>
+            </metadata>
+         </contentSpec>
+      </object>
+   </extension>
+
+   <extension id="com.vmware.simplivity.citrixplugin.ovcDataItem">
+      <extendedPoint>vise.navigator.nodespecs</extendedPoint>
+      <object>
+         <title>OVC/ILO Details</title>
+         <icon>#{iconplugin}</icon>
+         <navigationTargetUid>com.vmware.simplivity.citrixplugin.ovcDataView</navigationTargetUid>
+         <parentUid>com.vmware.simplivity.citrixplugin.entryPoint</parentUid>
+      </object>
+   </extension>
+
+   
+
+   <!-- Plugin Menu for Virtual Machine vSphere Object -->
+   <extension id="com.vmware.simplivity.citrixplugin.vm.menu">
+      <extendedPoint>vsphere.core.menus.solutionMenus</extendedPoint>
+      <object>
+         <label>HPE SimpliVity CWA Plugin</label>
+         <children>
+            <Array>
+               <com.vmware.actionsfw.ActionMenuItemSpec>
+                  <type>action</type>
+                  <uid>com.vmware.simplivity.citrixplugin.vm.action</uid>
+               </com.vmware.actionsfw.ActionMenuItemSpec>
+               <com.vmware.actionsfw.ActionMenuItemSpec>
+                  <type>action</type>
+                  <uid>com.vmware.simplivity.citrixplugin.vm.headless.action</uid>
+               </com.vmware.actionsfw.ActionMenuItemSpec>
+            </Array>
+         </children>
+      </object>
+      <metadata>
+         <objectType>VirtualMachine</objectType>
+      </metadata>
+   </extension>
+
+  
+
+   <extension id="com.vmware.simplivity.citrixplugin.vm.monitorCategory">
+      <extendedPoint>vsphere.core.vm.monitorCategories</extendedPoint>
+      <object>
+         <label>#{vmMonitorCategoryTitle}</label>
+      </object>
+   </extension>
+
+   <extension id="com.vmware.simplivity.citrixplugin.monitorView">
+      <extendedPoint>vsphere.core.vm.monitorViews</extendedPoint>
+      <object>
+         <name>#{vmMonitorViewTitle}</name>
+         <categoryUid>com.vmware.simplivity.citrixplugin.vm.monitorCategory</categoryUid>
+         <contentSpec>
+            <url>simplivity-citrixplugin/index.html?view=vm-monitor</url>
+         </contentSpec>
+      </object>
+   </extension>
+
+      <!-- configure Navigator Category Item and Global View -->
+   <extension id="com.vmware.simplivity.citrixplugin.configureView">
+      <extendedPoint>vise.global.views</extendedPoint>
+      <object>
+         <name>Configure</name>
+         <contentSpec>
+            <url>simplivity-citrixplugin/index.html?view=configure</url>
+            <metadata>
+               <entry>
+                  <key>hasTitle</key>
+                  <value>false</value>
+               </entry>
+            </metadata>
+         </contentSpec>
+      </object>
+   </extension>
+
+   <extension id="com.vmware.simplivity.citrixplugin.configureItem">
+      <extendedPoint>vise.navigator.nodespecs</extendedPoint>
+      <object>
+         <title>Configure</title>
+         <icon>#{iconplugin}</icon>
+         <navigationTargetUid>com.vmware.simplivity.citrixplugin.configureView</navigationTargetUid>
+         <parentUid>com.vmware.simplivity.citrixplugin.entryPoint</parentUid>
+      </object>
+   </extension>
+
+  <!-- deconfigure Navigator Category Item and Global View -->
+   <extension id="com.vmware.simplivity.citrixplugin.deconfigureView">
+      <extendedPoint>vise.global.views</extendedPoint>
+      <object>
+         <name>Deconfigure</name>
+         <contentSpec>
+            <url>simplivity-citrixplugin/index.html?view=deconfigure</url>
+            <metadata>
+               <entry>
+                  <key>hasTitle</key>
+                  <value>false</value>
+               </entry>
+            </metadata>
+         </contentSpec>
+      </object>
+   </extension>
+
+   <extension id="com.vmware.simplivity.citrixplugin.deconfigureItem">
+      <extendedPoint>vise.navigator.nodespecs</extendedPoint>
+      <object>
+         <title>Deconfigure</title>
+         <icon>#{iconplugin}</icon>
+         <navigationTargetUid>com.vmware.simplivity.citrixplugin.deconfigureView</navigationTargetUid>
+         <parentUid>com.vmware.simplivity.citrixplugin.entryPoint</parentUid>
+      </object>
+   </extension>
+</plugin>

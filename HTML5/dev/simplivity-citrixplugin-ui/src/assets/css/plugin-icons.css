@@ -1,0 +1,60 @@
+/* Copyright (c) 2018 VMware, Inc. All rights reserved. */
+
+/*
+ * EXTERNAL ICONS SUPPORT: plugin-icons.css contain "external" icons, i.e. the ones
+ * displayed outside plugin's views, in the main app menus, shortcuts or object lists.
+ * Do not include other CSS rules here!
+ */
+.com_vmware_simpivity_citrixplugin-icon-citrixcloud {
+    background: url("../images/citrixcloud1.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin: 1px 4px 0;
+}
+
+.com_vmware_simpivity_citrixplugin-icon-plugin {
+    background: url("../images/plugin.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin: 1px 4px 0;
+}
+.com_vmware_simpivity_citrixplugin-icon-welcome {
+    background: url("../images/welcome.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin: 1px 4px 0;
+}
+
+.com_vmware_simpivity_citrixplugin-icon-settings {
+    background: url("../images/settings.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin: 1px 4px 0;
+}
+
+.com_vmware_simpivity_citrixplugin-icon-list {
+    background: url("../images/list.svg");
+    background-size: contain;
+    background-repeat: no-repeat;
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin: 1px 4px 0;
+}

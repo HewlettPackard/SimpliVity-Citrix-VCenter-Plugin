@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:osgi="http://www.springframework.org/schema/osgi"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:mvc="http://www.springframework.org/schema/mvc"
+   xmlns:context="http://www.springframework.org/schema/context"
+   xsi:schemaLocation="
+      http://www.springframework.org/schema/beans
+      http://www.springframework.org/schema/beans/spring-beans.xsd
+      http://www.springframework.org/schema/osgi
+      http://www.springframework.org/schema/osgi/spring-osgi.xsd
+      http://www.springframework.org/schema/mvc
+      http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+      http://www.springframework.org/schema/context
+      http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+   <!-- DO NOT CHANGE this section, it enables Spring MVC @Controller programming model -->
+
+   <mvc:annotation-driven />
+   <context:annotation-config/>
+
+   <!-- Controller beans on the java side -->
+  <!--  <bean name="chassisController" class="com.vmware.simplivity.citrixplugin.controllers.OVCController" /> -->
+
+   <bean name="ovcController" class="com.vmware.simplivity.citrixplugin.controllers.OVCController" />
+   
+    <bean name="readCfgFileController" class="com.vmware.simplivity.citrixplugin.controllers.ReadCfgFileController" />
+    
+    <bean name="clusterController" class="com.vmware.simplivity.citrixplugin.controllers.ClusterController" />
+    
+    <bean name="configurationController" class="com.vmware.simplivity.citrixplugin.controllers.ConfigurationController" />
+    
+    <bean name="deconfigurationController" class="com.vmware.simplivity.citrixplugin.controllers.DeconfigurationController" />
+    
+    <bean name="deconfigureTableController" class="com.vmware.simplivity.citrixplugin.controllers.DeconfigureTableController" />
+
+   <!-- OSGI references to services used by the controller -->
+
+  <!--  <osgi:reference id="chassisService"
+                   interface="com.vmware.simplivity.citrixplugin.services.OVCService" /> -->
+                   
+   <osgi:reference id="ovcService"
+                   interface="com.vmware.simplivity.citrixplugin.services.OVCService" />
+                   
+  <osgi:reference id="clusterService"
+                   interface="com.vmware.simplivity.citrixplugin.services.ClusterService" />
+            
+  <osgi:reference id="configurationService"
+                   interface="com.vmware.simplivity.citrixplugin.services.ConfigurationService" />
+                   
+  <osgi:reference id="deconfigurationService"
+                   interface="com.vmware.simplivity.citrixplugin.services.DeconfigurationService" />
+                   
+  <osgi:reference id="deconfigureTableService"
+                   interface="com.vmware.simplivity.citrixplugin.services.DeconfigureTableService" />
+            
+  <osgi:reference id="readCfgFileService"
+                   interface="com.vmware.simplivity.citrixplugin.services.ReadCfgFileService" />
+
+</beans>
+
