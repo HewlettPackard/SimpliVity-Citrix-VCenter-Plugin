@@ -67,7 +67,7 @@ To develop new features or fix bugs in the plugins, refer the code in the Flex6.
 -	The template should not join the AD domain. The plugin creates the VM and joins to AD.
 -	IP address of VM(s) can be created by the plugin that is assigned from the DHCP server and user has option to assign static IP.
 -   If the vCenter is not deployed on Windows(VCSA), then a new Windows VM with OpenSSH server should be installed and the server should be up and running.
--   If vCenter is not deployed on Windows(VCSA), copy the PowerShell scripts provided in the HTML5/package/SimpliVityCitrixScripts folder onto the C:\SimpliVityCitrix folder.
+-   If vCenter is not deployed on Windows(VCSA), Unzip the SimpliVityCitrixScripts.zip file in the HTML5/dev folder and copy the folder in C drive of remote Windows VM where OpenSSH is installed. After unzipping, all the PowerShell scripts should be inside C:\SimplivityCitrix folder.
 
 ### HPE Simplivity
 -	OmniCube Controller: 4.0
@@ -80,7 +80,7 @@ To develop new features or fix bugs in the plugins, refer the code in the Flex6.
 -	Download the HPEExtensionInstaller.zip file from the install folder.
 -	Extract the HPEExtensionInstaller.jar and ExtensionInfo.json file from the zip file and copy to a folder where user has read, write and execute permissions.
 -   Plugin package is available in HTML5/package folder. 
--	Refer the user guide for the usage which is avilable in HTML5/docs.
+-	Refer the [user guide](https://github.com/HewlettPackard/SimpliVity-Citrix-VCenter-Plugin/blob/master/HTML5/docs/HPE_Simplivity_Citrix_UserGuide.pdf) for the usage which is avilable in HTML5/docs.
 
 ## Plugin Development
 To develop new features or fix bugs in the plugins, refer the HTML5/code in the dev directory of respective type (HTMLx.x)
