@@ -40,7 +40,6 @@ Cloud connector installation of SimpliVity vCenter is tested on the following ve
 -	API Version: 1.8
 
 ### VMWare vSphere
--	vCenter Client Windows 2016 
 -	Build Version 6.5.0
 -	Build 4944578
 
@@ -75,7 +74,6 @@ To develop new features or fix bugs in the plugins, refer the code in the Flex6.
 -	API Version: 1.14
 
 ## VMWare vSphere
--   vCenter Client Windows 2016
 -   Build Version 6.7.0
 
 ## Installation of Plugin:
