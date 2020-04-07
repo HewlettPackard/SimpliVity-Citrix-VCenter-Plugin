@@ -9,7 +9,6 @@ This version of HPE SimpliVity plugin for Citrix cloud installs and configures C
 
 -   Flex plugin supported for vSphere 6.5.
 -   HTML5 plugin supported for vSphere 6.7.
--	Proxy implementation is a preview feature (beta) in version 1.0
 -	Secure SSL/HTTPS enabled on SimpliVity OmniCube controller (OVC) IP address to connect using REST APIs.
 -	DHCP Server is required for assignment of IP’s to Cloud Connector VMs.
 -	VM template is tested on Windows 2016 Operating System.
