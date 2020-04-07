@@ -53,3 +53,18 @@ To develop new features or fix bugs in the plugins, refer the code in the dev di
 -	Code for the service layer (Java) is available in dev/citrixplugin-service folder.
 -	Code for the UI layer (flex) is available in dev/citrixplugin-ui folder.
 
+## VMWare vSphere
+-   vCenter Client Windows 2016
+-   Build Version 6.7.0
+
+## Installation of Plugin:
+-	Download the HPEExtensionInstaller.zip file from the install folder.
+-	Extract the HPEExtensionInstaller.jar and ExtensionInfo.json file from the zip file and copy to a folder where user has read, write and execute permissions.
+-   Plugin package is available in package folder. 
+-	Refer the user guide for the usage.
+
+## Plugin Development
+To develop new features or fix bugs in the plugins, refer the code in the dev directory of respective type (Flexx.x or HTMLx.x)
+-	Powershell scripts to configure and deconfigure are available in dev/citrixplugin-service/src/main/resources.
+-	Code for the service layer (Java) is available in dev/citrixplugin-service folder.
+-	Code for the UI layer (HTML5 and Angular JS) is available in dev/citrixplugin-ui folder.
