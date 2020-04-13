@@ -34,7 +34,7 @@ import com.vmware.simplivity.citrixplugin.model.ScriptInfo;
 
 public class BasicCfgFileUtil 
 {
-	private Logger logger = Logger.getLogger(BasicCfgFileUtil.class);
+    private Logger logger = Logger.getLogger(BasicCfgFileUtil.class);
     
     private String msg = null;
        
