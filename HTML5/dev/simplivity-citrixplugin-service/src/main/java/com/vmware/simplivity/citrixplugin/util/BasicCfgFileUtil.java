@@ -501,6 +501,7 @@ public class BasicCfgFileUtil
 		/* INSTALLATION OF CWC CONNECTOR SCRIPT*/
 		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_INSTALL_CWC", "Few or all the required parameters are missing for VM_NAME.");
 		ERROR_MAP.put("CWC_INSTALLATION_FAILED", "Citric CWC Connector failed for VM VM_NAME.");
+		ERROR_MAP.put("MIGRATION_ERROR", "Failed to move the VM VM_NAME.");
 		
 		/* UNNISTALL CWC Connector */
 		ERROR_MAP.put("NO_REQUIRED_PARAMETERS_UNINSTALL_CWC", "Few or all the required parameters are missing for VM_NAME.");
