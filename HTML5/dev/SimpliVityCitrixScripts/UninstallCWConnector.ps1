@@ -63,7 +63,7 @@ Try {
 	    Write-Error "Few or all the required parameters are missing"
 	    exit 1
 	}
-	Write-Host "================ $vmName UNINSTALLING CWCCONNECTOR FROM VM SCRIPT START==============="
+
 	Write-Host "Input parameters successfully read for uninstall CWCConnector from VM $vmName" 
 	#"APPLOG| Input parameters successfully read for uninstall CWCConnector from VM $vmName" | WriteFile
 	set-PowercliConfiguration -InvalidCertificateAction Ignore -Confirm:$false

@@ -223,11 +223,29 @@ Write-Host "================ $vmName CWCCONNECTOR INSTALLATION SCRIPT START=====
 		Write-Host "VMHOST FROM INPUT: "$vmHost
 		
 		start-sleep $sleep_time
-		Move-VM -VM $vm -Destination $vmHost -ErrorAction Ignore
+		Try{
+			Move-VM -VM $vm -Destination $vmHost -ErrorAction Stop
+		}
+		Catch
+		{
+			Write-Error "MIGRATION_ERROR"
+			Write-Error "VM migration failed for the VM $vmName"
+			cleanUp $vm
+			exit -1
+		}
 		start-sleep $sleep_time
 		
 		$vm = Get-vm -Name $vmName
-		Write-Host "VM  host :" $vm.VMHost.Name
+		$hostName = $vm.VMHost.Name
+		Write-Host "Post Migration of VM  $vmName host : $hostName"
+		Write-Host "Expected host: "$vmHost
+		if($hostName -ne $vmHost)
+		{
+			Write-Error "MIGRATION_ERROR"
+			Write-Error "VM migration failed for the VM $vmName"
+			cleanUp $vm
+			exit -1
+		}
 	}   
 
 	##"APPLOG| END -  Citrix Cloud installation completed" | WriteFile
