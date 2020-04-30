@@ -76,7 +76,7 @@ To develop new features or fix bugs in the plugins, refer the code in the Flex6.
 -   Build Version 6.7.0
 
 ## Installation of Plugin:
--	Download the HPEExtensionInstaller.zip file from the install folder.
+-	Download the HPEExtensionInstaller.zip file from the installer folder.
 -	Extract the HPEExtensionInstaller.jar and ExtensionInfo.json file from the zip file and copy to a folder where user has read, write and execute permissions.
 -   Plugin package is available in HTML5/package folder. 
 -	Refer the [user guide](https://github.com/HewlettPackard/SimpliVity-Citrix-VCenter-Plugin/blob/master/HTML5/docs/HPE_Simplivity_Citrix_UserGuide.pdf) for the usage which is avilable in HTML5/docs.
